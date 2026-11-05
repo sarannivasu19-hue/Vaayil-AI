@@ -3,14 +3,49 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Sparkles, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Sector } from '../../types';
+import { getSectorTheme } from '../../config/sectorThemes';
 import { HubPortal3D } from './HubPortal3D';
 import { SectorNode3D } from './SectorNode3D';
 
 interface VaayilHub3DProps {
   sectors: Sector[];
   selectedSector: Sector | null;
+  hoveredSector?: Sector | null;
+  onHoverSector?: (sector: Sector | null) => void;
   onSelectSector: (sector: Sector) => void;
 }
+
+const DynamicHubLighting: React.FC<{
+  activeSector: Sector | null;
+}> = ({ activeSector }) => {
+  const theme = getSectorTheme(activeSector?.id);
+  const targetBg = useRef(new THREE.Color('#080B18'));
+  const targetLight = useRef(new THREE.Color('#32D8E8'));
+  const pointLightRef = useRef<THREE.PointLight>(null);
+
+  useFrame((state) => {
+    const bgCol = activeSector ? theme.gradient.from : '#080B18';
+    const lightCol = activeSector ? theme.accent : '#32D8E8';
+    targetBg.current.set(bgCol);
+    targetLight.current.set(lightCol);
+
+    if (state.scene.background instanceof THREE.Color) {
+      state.scene.background.lerp(targetBg.current, 0.05);
+    }
+    if (pointLightRef.current) {
+      pointLightRef.current.color.lerp(targetLight.current, 0.05);
+    }
+  });
+
+  return (
+    <>
+      <ambientLight intensity={activeSector ? 0.65 : 0.5} />
+      <directionalLight position={[5, 8, 5]} intensity={1.0} color="#ffffff" />
+      <directionalLight position={[-5, 5, -5]} intensity={0.5} color={theme.accentSecondary || '#8065FF'} />
+      <pointLight ref={pointLightRef} position={[0, 6, 0]} intensity={0.8} color="#32D8E8" distance={14} />
+    </>
+  );
+};
 
 const CameraRig: React.FC<{
   selectedSector: Sector | null;
@@ -48,9 +83,13 @@ const CameraRig: React.FC<{
 export const VaayilHub3D: React.FC<VaayilHub3DProps> = ({
   sectors,
   selectedSector,
+  hoveredSector,
+  onHoverSector,
   onSelectSector,
 }) => {
   const RADIUS = 4.4;
+  const activeSector = hoveredSector || selectedSector;
+  const theme = getSectorTheme(activeSector?.id);
 
   return (
     <div className="w-full h-full absolute inset-0">
@@ -61,31 +100,28 @@ export const VaayilHub3D: React.FC<VaayilHub3DProps> = ({
       >
         <color attach="background" args={['#080B18']} />
 
-        {/* Lighting */}
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[5, 8, 5]} intensity={1.0} color="#ffffff" />
-        <directionalLight position={[-5, 5, -5]} intensity={0.4} color="#8065FF" />
-        <pointLight position={[0, 6, 0]} intensity={0.6} color="#32D8E8" distance={12} />
+        {/* Dynamic Theme Lighting */}
+        <DynamicHubLighting activeSector={activeSector} />
 
         {/* Soft environment for metallic reflections */}
         <Environment preset="night" />
 
-        {/* Ambient particles */}
+        {/* Ambient particles tailored to active theme */}
         <Sparkles
           count={60}
           scale={18}
           size={1.8}
           speed={0.25}
-          color="#32D8E8"
-          opacity={0.5}
+          color={theme.particles[0] || '#32D8E8'}
+          opacity={0.55}
         />
         <Sparkles
-          count={30}
+          count={35}
           scale={14}
-          size={1.2}
-          speed={0.15}
-          color="#A58EFF"
-          opacity={0.35}
+          size={1.4}
+          speed={0.18}
+          color={theme.particles[1] || '#A58EFF'}
+          opacity={0.4}
         />
 
         {/* Central portal */}
@@ -102,6 +138,7 @@ export const VaayilHub3D: React.FC<VaayilHub3DProps> = ({
               radius={RADIUS}
               isSelected={selectedSector?.id === sector.id}
               onSelect={onSelectSector}
+              onHover={onHoverSector}
             />
           );
         })}

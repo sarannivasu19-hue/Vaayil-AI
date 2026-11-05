@@ -7,12 +7,16 @@ import { ArrowRight } from 'lucide-react';
 interface VaayilHub2DProps {
   sectors: Sector[];
   selectedSector: Sector | null;
+  hoveredSector?: Sector | null;
+  onHoverSector?: (sector: Sector | null) => void;
   onSelectSector: (sector: Sector) => void;
 }
 
 export const VaayilHub2D: React.FC<VaayilHub2DProps> = ({
   sectors,
   selectedSector,
+  hoveredSector,
+  onHoverSector,
   onSelectSector,
 }) => {
   return (
@@ -59,6 +63,8 @@ export const VaayilHub2D: React.FC<VaayilHub2DProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
         {sectors.map((sector, index) => {
           const isSelected = selectedSector?.id === sector.id;
+          const isHovered = hoveredSector?.id === sector.id;
+          const isHighlighted = isSelected || isHovered;
 
           return (
             <motion.div
@@ -67,6 +73,8 @@ export const VaayilHub2D: React.FC<VaayilHub2DProps> = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.07, duration: 0.35 }}
               whileHover={{ y: -4, transition: { duration: 0.18 } }}
+              onMouseEnter={() => onHoverSector?.(sector)}
+              onMouseLeave={() => onHoverSector?.(null)}
               onClick={() => onSelectSector(sector)}
               role="button"
               tabIndex={0}
@@ -74,9 +82,9 @@ export const VaayilHub2D: React.FC<VaayilHub2DProps> = ({
               aria-label={`Enter ${sector.display_name_en} workspace`}
               className="group relative rounded-2xl p-5 cursor-pointer text-left overflow-hidden transition-shadow duration-200"
               style={{
-                background: isSelected ? `${sector.accent_color}10` : '#101626',
-                border: `1px solid ${isSelected ? sector.accent_color : 'rgba(255,255,255,0.08)'}`,
-                boxShadow: isSelected ? `0 0 30px ${sector.accent_color}25` : undefined,
+                background: isHighlighted ? `${sector.accent_color}14` : '#101626',
+                border: `1px solid ${isHighlighted ? sector.accent_color : 'rgba(255,255,255,0.08)'}`,
+                boxShadow: isHighlighted ? `0 0 30px ${sector.accent_color}30` : undefined,
               }}
             >
               {/* Background gradient on hover */}

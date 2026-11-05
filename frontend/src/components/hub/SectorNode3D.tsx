@@ -11,6 +11,7 @@ interface SectorNode3DProps {
   radius: number;
   isSelected: boolean;
   onSelect: (sector: Sector) => void;
+  onHover?: (sector: Sector | null) => void;
 }
 
 export const SectorNode3D: React.FC<SectorNode3DProps> = ({
@@ -19,6 +20,7 @@ export const SectorNode3D: React.FC<SectorNode3DProps> = ({
   radius,
   isSelected,
   onSelect,
+  onHover,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
@@ -54,10 +56,12 @@ export const SectorNode3D: React.FC<SectorNode3DProps> = ({
         onPointerOver={(e) => {
           e.stopPropagation();
           setHovered(true);
+          onHover?.(sector);
           document.body.style.cursor = 'pointer';
         }}
         onPointerOut={() => {
           setHovered(false);
+          onHover?.(null);
           document.body.style.cursor = 'auto';
         }}
         scale={isSelected ? 1.3 : hovered ? 1.18 : 1.0}

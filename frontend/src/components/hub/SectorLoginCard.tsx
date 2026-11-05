@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Sector } from '../../types';
+import { getSectorTheme } from '../../config/sectorThemes';
 import { DynamicIcon } from '../ui/Icons';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowLeft, Lock, User as UserIcon, Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -49,7 +50,8 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); doLogin(username, password); };
   const handleDemoLogin = () => { setUsername(demo.username); setPassword('vaayil123'); doLogin(demo.username, 'vaayil123'); };
 
-  const accent = sector.accent_color;
+  const theme = getSectorTheme(sector.id);
+  const accent = theme.accent;
 
   return (
     <motion.div
@@ -57,17 +59,17 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.93, y: 14 }}
       transition={{ duration: 0.26, ease: 'easeOut' }}
-      className="w-full max-w-sm mx-auto rounded-2xl overflow-hidden shadow-2xl"
+      className="w-full max-w-sm mx-auto rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl"
       style={{
-        background: '#101626',
-        border: `1px solid ${accent}30`,
-        boxShadow: `0 0 60px ${accent}18, 0 25px 60px rgba(0,0,0,0.75)`,
+        background: theme.surface,
+        border: `1px solid ${theme.borderHighlight}`,
+        boxShadow: `0 0 60px ${theme.glow}, 0 25px 60px rgba(0,0,0,0.85)`,
       }}
     >
       {/* Top colour band */}
       <div
         className="h-1.5 w-full"
-        style={{ background: `linear-gradient(90deg, ${accent}, #8065FF)` }}
+        style={{ background: `linear-gradient(90deg, ${theme.accent}, ${theme.accentSecondary})` }}
       />
 
       <div className="p-6">

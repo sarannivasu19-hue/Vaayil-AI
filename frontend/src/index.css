@@ -81,6 +81,23 @@
   --font-heading:   'Sora', sans-serif;
   --font-mono:      'JetBrains Mono', monospace;
   --font-tamil:     'Noto Sans Tamil', 'Inter', sans-serif;
+
+  /* Sector Visual World Variables (dynamically overridden per sector) */
+  --sector-accent:           #8065FF;
+  --sector-accent-sec:       #A58EFF;
+  --sector-glow:             rgba(128, 101, 255, 0.40);
+  --sector-bg-1:             #080B18;
+  --sector-bg-2:             #101626;
+  --sector-bg-3:             #17152D;
+  --sector-gradient:         linear-gradient(135deg, #080B18 0%, #101626 50%, #17152D 100%);
+  --sector-radial:           radial-gradient(circle at 50% 20%, #17152D 0%, #080B18 80%, #04060E 100%);
+  --sector-surface:          #101626;
+  --sector-surface-elevated: #171F33;
+  --sector-surface-glass:    rgba(23, 31, 51, 0.70);
+  --sector-border:           rgba(255, 255, 255, 0.08);
+  --sector-border-highlight: rgba(128, 101, 255, 0.50);
+  --sector-badge-bg:         rgba(128, 101, 255, 0.15);
+  --sector-badge-text:       #A58EFF;
 }
 
 /* ============================================================

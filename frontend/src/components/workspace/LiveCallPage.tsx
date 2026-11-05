@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Card } from '../ui/Card';
+import { SectorWorld2D } from '../world/SectorWorld2D';
 
 interface LanguageOption {
   value: LanguageMode;
@@ -362,12 +363,14 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
       )}
 
       {/* ── 3-Column layout (desktop) | stacked (mobile) ── */}
-      <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-0">
+      <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-0 relative">
+        {/* Sector World 2D Ambient Backdrop */}
+        <SectorWorld2D sectorId={sectorDetail.id} mode="ambient" className="z-0" />
 
         {/* ─── LEFT: Call info + controls ─── */}
         <div
-          className="flex flex-col gap-4 p-5 border-r overflow-y-auto"
-          style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0C1120' }}
+          className="flex flex-col gap-4 p-5 border-r overflow-y-auto relative z-10"
+          style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(12,17,32,0.85)', backdropFilter: 'blur(12px)' }}
         >
           {/* Timer / status */}
           <div className="text-center pt-2">
@@ -424,7 +427,7 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
         </div>
 
         {/* ─── CENTRE: Orb + Transcript ─── */}
-        <div className="flex flex-col overflow-hidden">
+        <div className="flex flex-col overflow-hidden relative z-10" style={{ background: 'rgba(8,11,24,0.45)', backdropFilter: 'blur(8px)' }}>
           {/* Orb area */}
           <div
             className="shrink-0 flex flex-col items-center justify-center gap-5 py-10 px-6"
@@ -569,8 +572,8 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
 
         {/* ─── RIGHT: Extracted Details + Confirmation ─── */}
         <div
-          className="flex flex-col gap-4 p-5 border-l overflow-y-auto"
-          style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0C1120' }}
+          className="flex flex-col gap-4 p-5 border-l overflow-y-auto relative z-10"
+          style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(12,17,32,0.85)', backdropFilter: 'blur(12px)' }}
         >
           {/* Slots header */}
           <div className="flex items-center gap-2">

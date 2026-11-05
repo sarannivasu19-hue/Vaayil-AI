@@ -8,6 +8,9 @@ import { VaayilHub3D } from './components/hub/VaayilHub3D';
 import { VaayilHub2D } from './components/hub/VaayilHub2D';
 import { SectorLoginCard } from './components/hub/SectorLoginCard';
 import { WorkspaceShell } from './components/layout/WorkspaceShell';
+import { SectorWorld2D } from './components/world/SectorWorld2D';
+import { SectorTransitionIntro } from './components/world/SectorTransitionIntro';
+import { getSectorTheme } from './config/sectorThemes';
 import { AlertCircle } from 'lucide-react';
 
 /* ── Loading screen ── */
@@ -91,6 +94,8 @@ export const App: React.FC = () => {
   const { user, activeSector, logout, isLoading: authLoading } = useAuth();
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
+  const [hoveredSector, setHoveredSector] = useState<Sector | null>(null);
+  const [showIntro, setShowIntro] = useState<boolean>(false);
   const [is3DMode, setIs3DMode] = useState<boolean>(true);
   const [loadingSectors, setLoadingSectors] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -119,6 +124,17 @@ export const App: React.FC = () => {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  const handleSelectSector = (sec: Sector) => {
+    setSelectedSector(sec);
+    setShowIntro(true);
+  };
+
+  const handleBackToHub = () => {
+    setSelectedSector(null);
+    setShowIntro(false);
+    setHoveredSector(null);
+  };
+
   if (authLoading || loadingSectors) return <LoadingScreen />;
   if (fetchError) return <ErrorScreen error={fetchError} />;
 
@@ -134,19 +150,31 @@ export const App: React.FC = () => {
     );
   }
 
+  const activeTheme = getSectorTheme(hoveredSector?.id || selectedSector?.id);
+
   /* Unauthenticated — Hub */
   return (
     <div
-      className="min-h-screen relative overflow-hidden flex flex-col select-none"
+      className="min-h-screen relative overflow-hidden flex flex-col select-none transition-colors duration-700"
       style={{ background: '#080B18', color: '#E8EDF9' }}
     >
+      {/* Ambient background light smoothly shifting toward hovered / selected sector */}
+      <div
+        className="absolute inset-0 pointer-events-none transition-all duration-700 ease-out z-0"
+        style={{
+          background: hoveredSector || selectedSector
+            ? `radial-gradient(circle at 50% 40%, ${activeTheme.accent}14 0%, ${activeTheme.gradient.from}40 60%, transparent 100%)`
+            : 'radial-gradient(circle at 50% 30%, rgba(128,101,255,0.08) 0%, transparent 70%)',
+        }}
+      />
+
       <Navbar
         is3DMode={is3DMode}
         setIs3DMode={setIs3DMode}
-        onReturnHub={() => setSelectedSector(null)}
+        onReturnHub={handleBackToHub}
       />
 
-      <main className="flex-1 relative flex items-center justify-center w-full min-h-screen pt-14">
+      <main className="flex-1 relative flex items-center justify-center w-full min-h-screen pt-14 z-10">
         <div className="w-full h-full min-h-[calc(100vh-3.5rem)] flex items-center justify-center relative">
 
           {is3DMode ? (
@@ -154,7 +182,9 @@ export const App: React.FC = () => {
               <VaayilHub3D
                 sectors={sectors}
                 selectedSector={selectedSector}
-                onSelectSector={(sec) => setSelectedSector(sec)}
+                hoveredSector={hoveredSector}
+                onHoverSector={setHoveredSector}
+                onSelectSector={handleSelectSector}
               />
             </div>
           ) : (
@@ -162,20 +192,41 @@ export const App: React.FC = () => {
               <VaayilHub2D
                 sectors={sectors}
                 selectedSector={selectedSector}
-                onSelectSector={(sec) => setSelectedSector(sec)}
+                hoveredSector={hoveredSector}
+                onHoverSector={setHoveredSector}
+                onSelectSector={handleSelectSector}
               />
             </div>
           )}
 
-          {/* Login card overlay */}
+          {/* Sector Transition Intro (1.5s skippable doorway portal) */}
           <AnimatePresence>
-            {selectedSector && (
-              <div className="fixed inset-0 z-30 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <SectorLoginCard
-                  sector={selectedSector}
-                  onBack={() => setSelectedSector(null)}
-                  onLoginSuccess={() => setSelectedSector(null)}
-                />
+            {selectedSector && showIntro && (
+              <SectorTransitionIntro
+                sector={selectedSector}
+                onComplete={() => setShowIntro(false)}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Full Immersive Sector World Login Overlay */}
+          <AnimatePresence>
+            {selectedSector && !showIntro && (
+              <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+                {/* Immersive 2D Sector World Backdrop */}
+                <SectorWorld2D sectorId={selectedSector.id} mode="full" />
+
+                {/* Subtle dark vignette backdrop */}
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-none" />
+
+                {/* Sector Login Card centered on top */}
+                <div className="relative z-10 w-full max-w-sm">
+                  <SectorLoginCard
+                    sector={selectedSector}
+                    onBack={handleBackToHub}
+                    onLoginSuccess={handleBackToHub}
+                  />
+                </div>
               </div>
             )}
           </AnimatePresence>
@@ -192,11 +243,14 @@ export const App: React.FC = () => {
                 className="px-4 py-2 rounded-full text-xs flex items-center gap-2.5 shadow-xl backdrop-blur-xl"
                 style={{
                   background: 'rgba(16,22,38,0.75)',
-                  border: '1px solid rgba(50,216,232,0.20)',
+                  border: `1px solid ${hoveredSector ? activeTheme.accent + '40' : 'rgba(50,216,232,0.20)'}`,
                   color: '#9AA7BE',
                 }}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#32D8E8] animate-ping" />
+                <span
+                  className="w-1.5 h-1.5 rounded-full animate-ping"
+                  style={{ background: activeTheme.accent }}
+                />
                 <span className="font-tamil">துறையை தேர்வு செய்ய கிளிக் செய்யவும்</span>
                 <span style={{ color: '#4A5568' }}>•</span>
                 <span>Click any sector to sign in</span>

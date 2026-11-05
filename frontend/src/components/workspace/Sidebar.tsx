@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Sector, User } from '../../types';
+import { getSectorTheme } from '../../config/sectorThemes';
 import { DynamicIcon } from '../ui/Icons';
 import {
   LayoutDashboard,
@@ -88,7 +89,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onReturnHub,
   onLogout,
 }) => {
-  const accent = sector.accent_color;
+  const theme = getSectorTheme(sector.id);
+  const accent = theme.accent;
 
   return (
     <aside
@@ -97,18 +99,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         isCollapsed ? 'w-[72px]' : 'w-[240px]',
       )}
       style={{
-        background: '#0C1120',
-        borderColor: 'rgba(255,255,255,0.07)',
+        background: theme.surface,
+        borderColor: theme.border,
       }}
     >
       {/* ── Brand header ── */}
       <div
         className="flex items-center justify-between px-3 py-4 shrink-0"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        style={{ borderBottom: `1px solid ${theme.border}` }}
       >
         {!isCollapsed && (
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <ArchMark color={accent} size={28} />
+            <div className="flex items-center gap-1.5 shrink-0">
+              <ArchMark color={accent} size={24} />
+              <div
+                className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 border"
+                style={{ background: theme.badgeBg, borderColor: theme.borderHighlight, color: accent }}
+              >
+                <DynamicIcon name={sector.icon} className="w-3 h-3" />
+              </div>
+            </div>
             <div className="flex flex-col leading-none overflow-hidden">
               <span
                 className="text-xs font-bold tracking-widest text-[#E8EDF9] truncate"
@@ -117,7 +127,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 VAAYIL AI
               </span>
               <span
-                className="text-[9px] text-[#9AA7BE] mt-0.5 truncate font-tamil"
+                className="text-[9px] mt-0.5 truncate font-tamil font-medium"
+                style={{ color: theme.accentSecondary }}
               >
                 {sector.display_name_ta}
               </span>

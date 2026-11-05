@@ -11,6 +11,8 @@ import { SettingsManager } from '../workspace/SettingsManager';
 import { NoiseLabView } from '../workspace/NoiseLabView';
 import { SafetyTestSheetView } from '../workspace/SafetyTestSheetView';
 import { UrgentAlertsView } from '../workspace/UrgentAlertsView';
+import { getSectorTheme, getSectorCssVariables } from '../../config/sectorThemes';
+import { SectorWorld2D } from '../world/SectorWorld2D';
 import { DynamicIcon } from '../ui/Icons';
 import { Loader2, LogOut, ArrowLeft, Search, Globe } from 'lucide-react';
 
@@ -77,15 +79,21 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
     );
   }
 
-  const accent = sectorDetail.accent_color;
+  const theme = getSectorTheme(sectorDetail.id);
+  const sectorVariables = getSectorCssVariables(theme);
+  const accent = theme.accent;
 
   /* Live Call gets full width — no max-w constraint */
   const isFullWidth = activeTab === 'live-call';
 
   return (
     <div
-      className="flex h-screen w-full overflow-hidden relative"
-      style={{ background: '#080B18', color: '#E8EDF9' }}
+      className="flex h-screen w-full overflow-hidden relative transition-colors duration-700"
+      style={{
+        ...sectorVariables,
+        background: theme.gradient.css,
+        color: '#E8EDF9',
+      }}
     >
       {/* Desktop sidebar */}
       <Sidebar
@@ -100,26 +108,38 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
       />
 
       {/* Main content column */}
-      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+
+        {/* Ambient subtle sector world pattern for non-live-call pages */}
+        {!isFullWidth && (
+          <SectorWorld2D
+            sectorId={sectorDetail.id}
+            mode="subtle"
+            className="z-0"
+          />
+        )}
 
         {/* ── Top header bar ── */}
         <header
-          className="shrink-0 flex items-center justify-between gap-4 px-5 h-14"
+          className="shrink-0 flex items-center justify-between gap-4 px-5 h-14 relative z-20"
           style={{
-            background: 'rgba(10,14,28,0.90)',
-            borderBottom: '1px solid rgba(255,255,255,0.07)',
-            backdropFilter: 'blur(12px)',
+            background: theme.surface,
+            borderBottom: `1px solid ${theme.border}`,
+            backdropFilter: 'blur(16px)',
           }}
         >
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div
-              className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: `${accent}20`, color: accent }}
+              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border"
+              style={{ background: theme.badgeBg, borderColor: theme.borderHighlight, color: theme.accent }}
             >
-              <DynamicIcon name={sectorDetail.icon} className="w-3.5 h-3.5" />
+              <DynamicIcon name={sectorDetail.icon} className="w-4 h-4" />
             </div>
-            <span className="text-xs text-[#9AA7BE] hidden sm:block font-tamil truncate">
+            <span
+              className="text-xs font-semibold hidden sm:block font-tamil truncate"
+              style={{ color: theme.accent }}
+            >
               {sectorDetail.display_name_ta}
             </span>
             <span className="text-xs text-[#4A5568] hidden sm:block">/</span>
