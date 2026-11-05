@@ -1,92 +1,395 @@
 @import "tailwindcss";
 
-@layer base {
-  * {
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-}
+/* ============================================================
+   VAAYIL AI — DESIGN TOKENS (Tailwind v4 @theme)
+   ============================================================ */
+@theme {
+  /* Core backgrounds */
+  --color-bg-base:      #080B18;
+  --color-bg-secondary: #101626;
+  --color-bg-elevated:  #171F33;
+  --color-bg-deep:      #17152D;
 
-:root {
-  --font-tamil: 'Noto Sans Tamil', sans-serif;
+  /* Brand */
+  --color-primary:       #8065FF;
+  --color-primary-light: #A58EFF;
+  --color-cyan:          #32D8E8;
+  --color-lavender:      #C3A5FF;
+
+  /* Text */
+  --color-text:           #E8EDF9;
+  --color-text-secondary: #9AA7BE;
+  --color-text-muted:     #4A5568;
+
+  /* Semantic */
+  --color-success: #42D6A4;
+  --color-warning: #FFBF69;
+  --color-danger:  #FF647C;
+  --color-info:    #32D8E8;
+
+  /* Sector accents */
+  --color-sector-panchayat:  #35D7E8;
+  --color-sector-clinic:     #9275FF;
+  --color-sector-vet:        #42D6A4;
+  --color-sector-hotel:      #FFBF69;
+  --color-sector-restaurant: #FF886F;
+  --color-sector-coaching:   #E58BCB;
+
+  /* Borders */
+  --color-border:       rgba(255,255,255,0.08);
+  --color-border-light: rgba(255,255,255,0.05);
+  --color-border-focus: #8065FF;
+
+  /* Fonts */
+  --font-sans:    'Inter', 'Noto Sans Tamil', sans-serif;
   --font-heading: 'Sora', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-mono:    'JetBrains Mono', monospace;
+  --font-tamil:   'Noto Sans Tamil', 'Inter', sans-serif;
+
+  /* Radius */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.6);
+  --shadow-xl:  0 20px 60px rgba(0,0,0,0.7);
 }
 
-h1, h2, h3, h4, .font-heading {
-  font-family: 'Sora', sans-serif;
+/* ============================================================
+   CSS CUSTOM PROPERTIES (runtime accessible)
+   ============================================================ */
+:root {
+  --bg-base:        #080B18;
+  --bg-secondary:   #101626;
+  --bg-elevated:    #171F33;
+  --bg-deep:        #17152D;
+  --c-primary:      #8065FF;
+  --c-primary-l:    #A58EFF;
+  --c-cyan:         #32D8E8;
+  --c-lavender:     #C3A5FF;
+  --c-text:         #E8EDF9;
+  --c-text-sec:     #9AA7BE;
+  --c-success:      #42D6A4;
+  --c-warning:      #FFBF69;
+  --c-danger:       #FF647C;
+  --font-heading:   'Sora', sans-serif;
+  --font-mono:      'JetBrains Mono', monospace;
+  --font-tamil:     'Noto Sans Tamil', 'Inter', sans-serif;
 }
 
-.font-mono {
-  font-family: 'JetBrains Mono', monospace;
+/* ============================================================
+   BASE LAYER
+   ============================================================ */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    background-color: var(--bg-base);
+    color: var(--c-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', 'Noto Sans Tamil', sans-serif;
+    background-color: var(--bg-base);
+    color: var(--c-text);
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* Default border colour */
+  * {
+    border-color: rgba(255,255,255,0.08);
+  }
+
+  /* Headings use Sora */
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: 'Sora', sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* Mono */
+  code, pre, kbd, samp, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Tamil text */
+  .font-tamil, [lang="ta"] {
+    font-family: 'Noto Sans Tamil', 'Inter', sans-serif;
+    line-height: 1.65;
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: rgba(128, 101, 255, 0.35);
+    color: #E8EDF9;
+  }
+
+  /* Focus — WCAG AA visible */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--c-primary);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Minimum 44px touch targets */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar       { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.14);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.28);
+  }
 }
 
-.font-tamil {
-  font-family: 'Noto Sans Tamil', 'Inter', sans-serif;
-  line-height: 1.6;
+/* ============================================================
+   COMPONENT LAYER — reusable primitives
+   ============================================================ */
+@layer components {
+
+  /* --- Glass panels --- */
+  .glass-panel {
+    background: rgba(16, 22, 38, 0.80);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+      0 20px 50px rgba(0,0,0,0.5),
+      inset 0 1px 0 rgba(255,255,255,0.07);
+  }
+
+  .glass-panel-glow {
+    background: rgba(13, 20, 36, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(50, 216, 232, 0.18);
+    box-shadow:
+      0 0 40px rgba(50, 216, 232, 0.12),
+      inset 0 1px 1px rgba(255,255,255,0.10);
+  }
+
+  .glass-elevated {
+    background: rgba(23, 31, 51, 0.90);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.10);
+  }
+
+  /* --- Surface cards --- */
+  .surface {
+    background-color: var(--bg-secondary);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+  }
+
+  .surface-elevated {
+    background-color: var(--bg-elevated);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+  }
+
+  /* --- Ambient portal radial bg --- */
+  .portal-bg {
+    background: radial-gradient(
+      ellipse at 50% 40%,
+      rgba(23, 21, 45, 0.6) 0%,
+      rgba(8, 11, 24, 1) 80%
+    );
+  }
+
+  /* --- Input base --- */
+  .input-base {
+    background-color: rgba(8, 11, 24, 0.7);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px;
+    color: var(--c-text);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    padding: 0.625rem 0.875rem;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+    width: 100%;
+  }
+  .input-base::placeholder {
+    color: var(--c-text-sec);
+    opacity: 0.6;
+  }
+  .input-base:focus {
+    outline: none;
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 3px rgba(128,101,255,0.20);
+  }
+  .input-base.error {
+    border-color: var(--c-danger);
+    box-shadow: 0 0 0 3px rgba(255,100,124,0.15);
+  }
+
+  /* --- Chip / badge base --- */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+  }
+
+  /* --- Sidebar nav item --- */
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--c-text-sec);
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    text-decoration: none;
+  }
+  .nav-item:hover {
+    background: rgba(23, 31, 51, 0.8);
+    color: var(--c-text);
+  }
+  .nav-item.active {
+    background: rgba(128,101,255,0.12);
+    border-left: 3px solid var(--c-primary);
+    color: var(--c-text);
+    padding-left: 9px;
+  }
+
+  /* --- Section divider label --- */
+  .nav-section-label {
+    padding: 12px 12px 4px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(154, 167, 190, 0.5);
+    font-family: 'JetBrains Mono', monospace;
+    user-select: none;
+  }
+
+  /* --- Skeleton shimmer --- */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(23,31,51,0.8) 0%,
+      rgba(50,60,80,0.8) 50%,
+      rgba(23,31,51,0.8) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+    border-radius: 8px;
+  }
 }
 
-/* 44px min touch target utility */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
-/* Accessible visible focus states */
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 2px solid #06b6d4;
-  outline-offset: 2px;
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
 }
 
-/* Glassmorphism primitives */
-.glass-panel {
-  background: rgba(15, 23, 42, 0.72);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+@keyframes orbPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%       { opacity: 0.85; transform: scale(1.07); }
 }
 
-.glass-panel-glow {
-  background: rgba(13, 20, 36, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  box-shadow: 0 0 35px rgba(6, 182, 212, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-}
-
-/* Radial portal background */
-.portal-bg {
-  background: radial-gradient(circle at 50% 50%, rgba(30, 41, 59, 0.5) 0%, rgba(7, 11, 20, 1) 85%);
-}
-
-/* Subtle glowing pulse */
 @keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%       { opacity: 0.85; transform: scale(1.08); }
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes waveform {
+  0%, 100% { height: 4px; }
+  50%       { height: 20px; }
+}
+
+/* Utility animation classes */
+.animate-float        { animation: float 4s ease-in-out infinite; }
+.animate-pulse-glow   { animation: orbPulse 3s ease-in-out infinite; }
+.animate-spin-slow    { animation: spinSlow 8s linear infinite; }
+.animate-fade-up      { animation: fadeSlideUp 0.3s ease-out forwards; }
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  50% {
-    opacity: 0.85;
-    transform: scale(1.08);
+
+  .skeleton {
+    animation: none;
+    background: rgba(23,31,51,0.8);
   }
 }
 
-.animate-pulse-glow {
-  animation: pulseGlow 4s ease-in-out infinite;
-}
-
-/* Custom scrollbar for dark theme */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #070b14;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.35);
+/* ============================================================
+   PRINT
+   ============================================================ */
+@media print {
+  body { background: white; color: black; }
 }

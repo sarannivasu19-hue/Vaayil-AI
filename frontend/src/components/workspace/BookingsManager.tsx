@@ -145,7 +145,7 @@ export const BookingsManager: React.FC<BookingsManagerProps> = ({ sectorDetail }
             >
               {sectorDetail.id}
             </span>
-            <span className="text-xs text-slate-400 font-mono">Phase 2 Active</span>
+            <span className="text-xs text-[#9AA7BE] font-mono">{sectorDetail.name}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-tamil tracking-tight">
             முன்பதிவுகள் & சேவைக் கோரிக்கைகள்

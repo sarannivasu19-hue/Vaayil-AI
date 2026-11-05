@@ -237,9 +237,25 @@ export const NoiseLabView: React.FC<NoiseLabViewProps> = ({ sectorDetail }) => {
     }
   }
 
-  function handleDownloadCsv(runId: number) {
-    const url = `/api/noise-lab/runs/${runId}/export-csv`;
-    window.open(url, '_blank');
+  async function handleDownloadCsv(runId: number) {
+    try {
+      const token = localStorage.getItem('vaayil_token');
+      const resp = await fetch(`/api/noise-lab/runs/${runId}/export-csv`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) throw new Error(`Export failed: ${resp.statusText}`);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `noise_lab_run_${runId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setErrorMsg(`CSV export failed: ${err.message}`);
+    }
   }
 
   const chartData = (experimentResult?.results || []).map((r) => ({
@@ -522,7 +538,7 @@ export const NoiseLabView: React.FC<NoiseLabViewProps> = ({ sectorDetail }) => {
           {/* Recharts Bar Chart */}
           <div className="p-5 rounded-2xl glass-panel border border-white/10 space-y-4">
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300">
-              Degradation Curve: Word Accuracy vs WER
+              Degradation Curve: Word Accuracy vs WER (Error Rate — lower WER is better)
             </h3>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -536,7 +552,7 @@ export const NoiseLabView: React.FC<NoiseLabViewProps> = ({ sectorDetail }) => {
                   />
                   <Legend />
                   <Bar dataKey="Accuracy" fill="#06b6d4" name="Word Accuracy %" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="WER" fill="#f43f5e" name="Word Error Rate (WER) %" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="WER" fill="#f43f5e" name="ERROR RATE % (lower = better)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -598,7 +614,7 @@ export const NoiseLabView: React.FC<NoiseLabViewProps> = ({ sectorDetail }) => {
                         </span>
                       </div>
                       <div className="p-2 rounded-xl bg-slate-900/60 border border-white/5">
-                        <span className="text-[10px] text-slate-400 font-mono uppercase block">WER</span>
+                        <span className="text-[10px] text-rose-400 font-mono uppercase block">WER ↓ lower=better</span>
                         <span className="text-sm font-extrabold text-rose-400 font-mono">
                           {res.wer_percent}%
                         </span>

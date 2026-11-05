@@ -1,14 +1,7 @@
 /**
- * LiveCallPage.tsx — Vaayil AI Phase 3, 4 & 5
- *
- * Full Voice Loop Experience:
- *   1. Record User Voice (MediaRecorder)
- *   2. Prisma STT (Speech-to-Text) -> Transcript
- *   3. /api/agent/turn (Deterministic Slot Engine) -> Agent Response
- *   4. Timbre TTS (Text-to-Speech) -> Plays Agent Audio
- *   5. Auto-listen toggle (default OFF) or manual mic tap to continue loop
- *   6. 5-State Voice Orb: idle, listening (with mic volume), processing, speaking, error
- *   7. Replay button, Stop button, Mute toggle, Autoplay blocked "Tap to play" fallback
+ * LiveCallPage.tsx — Vaayil AI Phase D Premium UI
+ * 3-column desktop layout: Call Info | Orb+Transcript | Details
+ * All logic identical to original — only JSX/styling changed.
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -16,23 +9,12 @@ import type { SectorDetail, TranscribeResponse, LanguageMode, ConversationTurn }
 import { api, ApiError } from '../../services/api';
 import { VoiceOrb, type OrbState } from './VoiceOrb';
 import {
-  Mic,
-  MicOff,
-  Square,
-  Upload,
-  Loader2,
-  AlertTriangle,
-  RefreshCw,
-  Play,
-  Volume2,
-  VolumeX,
-  ChevronDown,
-  Send,
-  Bot,
-  User as UserIcon,
-  CheckCircle2,
-  Sparkles,
+  Mic, MicOff, Square, Upload, Loader2, AlertTriangle,
+  RefreshCw, Play, Volume2, VolumeX, ChevronDown, Send,
+  Bot, User as UserIcon, CheckCircle2, Sparkles,
 } from 'lucide-react';
+import { clsx } from 'clsx';
+import { Card } from '../ui/Card';
 
 interface LanguageOption {
   value: LanguageMode;
@@ -57,7 +39,6 @@ function formatTimer(secs: number): string {
 }
 
 export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorDetail }) => {
-  // --- Voice / Loop States ---
   const [orbState, setOrbState] = useState<OrbState>('idle');
   const [language, setLanguage] = useState<LanguageMode>('tanglish');
   const [autoListen, setAutoListen] = useState(false);
@@ -65,15 +46,11 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [micVolume, setMicVolume] = useState(0.1);
   const [timerSecs, setTimerSecs] = useState(0);
-
-  // --- Feedback & Metadata ---
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [prismaMeta, setPrismaMeta] = useState<TranscribeResponse | null>(null);
   const [lastAgentAudioUrl, setLastAgentAudioUrl] = useState<string | null>(null);
-
-  // --- Conversation Engine States ---
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<ConversationTurn[]>([]);
   const [extractedSlots, setExtractedSlots] = useState<Record<string, any>>({});
@@ -82,7 +59,6 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
   const [typedInput, setTypedInput] = useState('');
   const [submittingTurn, setSubmittingTurn] = useState(false);
 
-  // --- Refs ---
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -96,7 +72,6 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
 
   const accent = sectorDetail.accent_color;
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -113,38 +88,25 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
     }
   }, [chatHistory, submittingTurn]);
 
-  // Initial welcome message from sector package
   useEffect(() => {
     if (chatHistory.length === 0) {
       const firstSlot = sectorDetail.slots[0];
-      const initialGreeting = language === 'tamil'
-        ? firstSlot.prompts.ta
-        : language === 'english'
-          ? firstSlot.prompts.en
-          : firstSlot.prompts.tanglish;
-
-      setChatHistory([
-        {
-          speaker: 'agent',
-          text: initialGreeting,
-        },
-      ]);
+      const initialGreeting = language === 'tamil' ? firstSlot.prompts.ta
+        : language === 'english' ? firstSlot.prompts.en : firstSlot.prompts.tanglish;
+      setChatHistory([{ speaker: 'agent', text: initialGreeting }]);
       setNextSlot(firstSlot.name);
     }
   }, [sectorDetail, language, chatHistory.length]);
 
-  // Plays TTS audio with autoplay fallback handling
   const playAgentAudio = useCallback(async (audioUrl: string) => {
     if (isMuted) return;
-
     if (audioPlayerRef.current) {
       audioPlayerRef.current.src = audioUrl;
       setOrbState('speaking');
       try {
         await audioPlayerRef.current.play();
         setAutoplayBlocked(false);
-      } catch (err) {
-        console.warn('Autoplay blocked by browser:', err);
+      } catch {
         setAutoplayBlocked(true);
         setOrbState('idle');
       }
@@ -153,21 +115,16 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
 
   const handleAudioEnded = useCallback(() => {
     setOrbState('idle');
-    // If auto-listen is active and call not completed, start recording next turn
     if (autoListen && engineState !== 'completed') {
-      setTimeout(() => {
-        startRecording();
-      }, 500);
+      setTimeout(() => startRecording(), 500);
     }
   }, [autoListen, engineState]);
 
-  // Dispatches text into engine turn + executes Timbre TTS
   const dispatchTurn = useCallback(async (text: string) => {
     if (!text.trim()) return;
     setSubmittingTurn(true);
     setOrbState('processing');
     setErrorMessage(null);
-
     try {
       const turnResponse = await api.executeAgentTurn({
         session_id: sessionId || undefined,
@@ -175,619 +132,536 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
         transcript_text: text,
         language_mode: language,
       });
-
       setSessionId(turnResponse.session_id);
       setEngineState(turnResponse.state);
       setExtractedSlots(turnResponse.slots);
       setNextSlot(turnResponse.next_slot);
       setChatHistory(turnResponse.conversation_history);
-
-      // Now call genuine Gnani Timbre TTS to synthesize the agent's response
       const agentMsg = turnResponse.agent_message;
       const langCode = language === 'english' ? 'en-IN' : 'ta-IN';
-
       try {
         const audioBlob = await api.speakText(agentMsg, langCode, 'Shivani');
         const url = URL.createObjectURL(audioBlob);
         setLastAgentAudioUrl(url);
         playAgentAudio(url);
-      } catch (ttsErr) {
-        console.error('Timbre TTS error:', ttsErr);
-        setOrbState('idle');
-      }
+      } catch { setOrbState('idle'); }
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Turn execution failed.';
-      setErrorMessage(msg);
+      setErrorMessage(err instanceof ApiError ? err.message : 'Turn execution failed.');
       setOrbState('error');
     } finally {
       setSubmittingTurn(false);
     }
   }, [sessionId, sectorDetail.id, language, playAgentAudio]);
 
-  // Sends recorded voice to Prisma STT -> Pipes into conversation loop
   const sendToPrismaAndEngine = useCallback(async (blob: Blob, fileName: string) => {
     setOrbState('processing');
     setErrorMessage(null);
-
     const formData = new FormData();
     formData.append('audio', blob, fileName);
     formData.append('language', language);
-
     try {
       const result = await api.transcribe(formData);
       setPrismaMeta(result);
-
-      if (result.transcript && result.transcript.trim()) {
+      if (result.transcript?.trim()) {
         await dispatchTurn(result.transcript);
       } else {
-        setErrorMessage('Prisma returned empty transcript. Please speak louder or closer to mic.');
+        setErrorMessage('Prisma returned empty transcript. Please speak louder or closer.');
         setOrbState('error');
       }
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Transcription failed.';
-      setErrorMessage(msg);
+      setErrorMessage(err instanceof ApiError ? err.message : 'Transcription failed.');
       setOrbState('error');
     }
   }, [language, dispatchTurn]);
 
-  // Start Mic recording with live audio level visualization
   const startRecording = useCallback(async () => {
-    setMicError(null);
-    setErrorMessage(null);
-    setOrbState('listening');
-    chunksRef.current = [];
-
-    // Stop any existing playing agent audio
-    if (audioPlayerRef.current) {
-      audioPlayerRef.current.pause();
-    }
-
+    setMicError(null); setErrorMessage(null); setOrbState('listening'); chunksRef.current = [];
+    if (audioPlayerRef.current) audioPlayerRef.current.pause();
     let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (err) {
       const e = err as DOMException;
       setMicError(e.name === 'NotAllowedError' ? 'Microphone permission denied.' : `Mic error: ${e.message}`);
-      setOrbState('error');
-      return;
+      setOrbState('error'); return;
     }
-
     streamRef.current = stream;
-
-    // Web Audio API volume analyser for reactive Voice Orb
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 64;
+      const analyser = audioCtx.createAnalyser(); analyser.fftSize = 64;
       const source = audioCtx.createMediaStreamSource(stream);
-      source.connect(analyser);
-      audioContextRef.current = audioCtx;
-      analyserRef.current = analyser;
-
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-
+      source.connect(analyser); audioContextRef.current = audioCtx; analyserRef.current = analyser;
+      const bufferLength = analyser.frequencyBinCount; const dataArray = new Uint8Array(bufferLength);
       const updateVolume = () => {
         if (!analyserRef.current) return;
         analyserRef.current.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < bufferLength; i++) {
-          sum += dataArray[i];
-        }
-        const avg = sum / bufferLength / 255;
-        setMicVolume(Math.min(1.0, avg * 2.5));
+        let sum = 0; for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+        setMicVolume(Math.min(1.0, (sum / bufferLength / 255) * 2.5));
         animFrameRef.current = requestAnimationFrame(updateVolume);
       };
       updateVolume();
-    } catch (e) {
-      console.warn('Web Audio Analyser not supported:', e);
-    }
-
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-      ? 'audio/webm;codecs=opus'
-      : '';
-
+    } catch { /* Web Audio not supported */ }
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
     const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
     mediaRecorderRef.current = recorder;
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
-
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
     recorder.onstop = async () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (audioContextRef.current) audioContextRef.current.close().catch(() => {});
       stream.getTracks().forEach(t => t.stop());
       if (timerRef.current) clearInterval(timerRef.current);
-
       const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
       await sendToPrismaAndEngine(blob, 'voice.webm');
     };
-
-    recorder.start(250);
-    setTimerSecs(0);
-
+    recorder.start(250); setTimerSecs(0);
     timerRef.current = setInterval(() => {
       setTimerSecs(prev => {
-        if (prev + 1 >= MAX_RECORDING_SECONDS) {
-          recorder.stop();
-          if (timerRef.current) clearInterval(timerRef.current);
-        }
+        if (prev + 1 >= MAX_RECORDING_SECONDS) { recorder.stop(); if (timerRef.current) clearInterval(timerRef.current); }
         return prev + 1;
       });
     }, 1000);
   }, [sendToPrismaAndEngine]);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]; if (!file) return;
     await sendToPrismaAndEngine(file, file.name);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, [sendToPrismaAndEngine]);
 
   const resetCall = () => {
     if (audioPlayerRef.current) audioPlayerRef.current.pause();
-    setOrbState('idle');
-    setTimerSecs(0);
-    setErrorMessage(null);
-    setMicError(null);
-    setPrismaMeta(null);
-    setSessionId(null);
-    setExtractedSlots({});
-    setEngineState('collecting');
-    setTypedInput('');
-
+    setOrbState('idle'); setTimerSecs(0); setErrorMessage(null); setMicError(null);
+    setPrismaMeta(null); setSessionId(null); setExtractedSlots({}); setEngineState('collecting'); setTypedInput('');
     const firstSlot = sectorDetail.slots[0];
-    const initialGreeting = language === 'tamil'
-      ? firstSlot.prompts.ta
-      : language === 'english'
-        ? firstSlot.prompts.en
-        : firstSlot.prompts.tanglish;
-
+    const initialGreeting = language === 'tamil' ? firstSlot.prompts.ta
+      : language === 'english' ? firstSlot.prompts.en : firstSlot.prompts.tanglish;
     setChatHistory([{ speaker: 'agent', text: initialGreeting }]);
     setNextSlot(firstSlot.name);
   };
 
   const selectedLang = LANGUAGE_OPTIONS.find(o => o.value === language) ?? LANGUAGE_OPTIONS[1];
+  const filledCount = Object.values(extractedSlots).filter(v => v !== undefined && v !== null).length;
+  const totalSlots = sectorDetail.slots.length;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 py-2 text-left">
+    <div className="h-full flex flex-col" style={{ background: '#080B18' }}>
       <audio ref={audioPlayerRef} onEnded={handleAudioEnded} className="hidden" />
+      <input ref={fileInputRef} type="file" accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a,.webm" onChange={handleFileUpload} className="hidden" />
 
-      {/* Top Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-white font-tamil tracking-tight">
-              நேரடி அழைப்பு — Voice Loop & Orb
-            </h1>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-950 border border-purple-500/30 text-purple-300">
-              Phase 5 Timbre TTS
+      {/* ── Top Controls Bar ── */}
+      <div
+        className="shrink-0 flex items-center justify-between gap-3 px-5 py-3 border-b"
+        style={{ borderColor: 'rgba(255,255,255,0.07)' }}
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-[#E8EDF9] font-tamil">{sectorDetail.display_name_ta}</span>
+          <span
+            className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-full border', {
+              'text-[#42D6A4] border-[#42D6A4]/30': engineState === 'completed',
+              'text-[#FFBF69] border-[#FFBF69]/30': engineState === 'confirming',
+              'text-[#32D8E8] border-[#32D8E8]/30': engineState === 'collecting',
+            })}
+            style={{ background: 'rgba(8,11,24,0.6)', fontFamily: 'JetBrains Mono, monospace' }}
+          >
+            {engineState}
+          </span>
+          {sessionId && (
+            <span className="text-[10px] text-[#4A5568] hidden sm:block" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+              #{sessionId.slice(0, 8)}
             </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {sectorDetail.name} · Full Voice Loop (Prisma STT ➔ Engine ➔ Timbre TTS)
-          </p>
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Auto-listen toggle */}
+        <div className="flex items-center gap-2">
+          {/* Auto-listen */}
           <button
             onClick={() => setAutoListen(v => !v)}
-            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+            className={clsx(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium cursor-pointer transition-colors',
               autoListen
-                ? 'bg-cyan-950/80 border-cyan-500/50 text-cyan-300'
-                : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
-            }`}
+                ? 'border-[#32D8E8]/40 text-[#32D8E8]'
+                : 'border-white/08 text-[#9AA7BE] hover:text-[#E8EDF9]'
+            )}
+            style={{ background: autoListen ? 'rgba(50,216,232,0.08)' : 'rgba(23,31,51,0.7)' }}
           >
-            <div className={`w-2 h-2 rounded-full ${autoListen ? 'bg-cyan-400 animate-pulse' : 'bg-slate-600'}`} />
-            <span>Auto-Listen: {autoListen ? 'ON' : 'OFF'}</span>
+            <div className={`w-1.5 h-1.5 rounded-full ${autoListen ? 'bg-[#32D8E8] animate-pulse' : 'bg-[#4A5568]'}`} />
+            Auto-Listen
           </button>
 
-          {/* Mute toggle */}
+          {/* Mute */}
           <button
             onClick={() => setIsMuted(v => !v)}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/10 transition-colors cursor-pointer"
-            title={isMuted ? 'Unmute Agent' : 'Mute Agent'}
+            className="p-2 rounded-xl border cursor-pointer transition-colors"
+            style={{ background: 'rgba(23,31,51,0.7)', borderColor: 'rgba(255,255,255,0.08)', color: isMuted ? '#FF647C' : '#9AA7BE' }}
+            title={isMuted ? 'Unmute agent' : 'Mute agent'}
           >
-            {isMuted ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Volume2 className="w-3.5 h-3.5" />}
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
 
-          {/* Language menu */}
+          {/* Language picker */}
           <div className="relative">
             <button
               onClick={() => setShowLangMenu(v => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl glass-panel border border-white/10 text-xs text-white font-medium hover:border-white/20 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium cursor-pointer transition-colors"
+              style={{ background: 'rgba(23,31,51,0.7)', borderColor: 'rgba(255,255,255,0.08)', color: '#E8EDF9' }}
             >
               <span className="font-tamil">{selectedLang.label}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-[#9AA7BE]" />
             </button>
             {showLangMenu && (
-              <div className="absolute right-0 mt-1.5 w-48 rounded-xl glass-panel border border-white/15 shadow-xl z-30 overflow-hidden">
+              <div
+                className="absolute right-0 mt-1.5 w-44 rounded-xl overflow-hidden z-30 shadow-xl"
+                style={{ background: '#101626', border: '1px solid rgba(255,255,255,0.10)' }}
+              >
                 {LANGUAGE_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => { setLanguage(opt.value); setShowLangMenu(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-white/5 transition-colors cursor-pointer text-left text-slate-300 hover:text-white"
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs cursor-pointer border-none bg-transparent hover:bg-[#171F33] transition-colors text-left"
+                    style={{ color: language === opt.value ? accent : '#9AA7BE' }}
                   >
                     <span className="font-tamil">{opt.label}</span>
-                    <span className="text-[10px] font-mono text-slate-500">{opt.sublabel}</span>
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10 }}>{opt.sublabel}</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
 
+          {/* Reset */}
           <button
             onClick={resetCall}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold border border-white/10 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium cursor-pointer transition-colors"
+            style={{ background: 'rgba(23,31,51,0.7)', borderColor: 'rgba(255,255,255,0.08)', color: '#9AA7BE' }}
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Reset</span>
+            Reset
           </button>
         </div>
       </div>
 
       {/* Autoplay blocked banner */}
       {autoplayBlocked && (
-        <div className="p-3 rounded-2xl bg-amber-950/60 border border-amber-500/50 flex items-center justify-between gap-4">
-          <div className="text-xs text-amber-200">
-            Browser paused audio output. Tap to listen to the agent's spoken reply.
-          </div>
+        <div
+          className="shrink-0 flex items-center justify-between gap-4 px-5 py-2.5 text-xs"
+          style={{ background: 'rgba(255,191,105,0.10)', borderBottom: '1px solid rgba(255,191,105,0.25)' }}
+        >
+          <span className="text-[#FFBF69]">Browser paused audio — tap to hear the agent reply.</span>
           <button
-            onClick={() => {
-              if (audioPlayerRef.current) audioPlayerRef.current.play();
-              setAutoplayBlocked(false);
-            }}
-            className="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shrink-0 cursor-pointer"
+            onClick={() => { if (audioPlayerRef.current) audioPlayerRef.current.play(); setAutoplayBlocked(false); }}
+            className="px-3 py-1 rounded-lg font-bold cursor-pointer border-none text-xs"
+            style={{ background: '#FFBF69', color: '#080B18' }}
           >
-            Tap to Play 🔊
+            Tap to Play
           </button>
         </div>
       )}
 
-      {/* Center 5-State Voice Orb Showcase */}
-      <div className="p-6 rounded-3xl glass-panel border border-white/10 flex flex-col items-center justify-center gap-3 relative overflow-hidden">
-        <VoiceOrb
-          state={orbState}
-          accentColor={accent}
-          micVolume={micVolume}
-          onClick={() => {
-            if (orbState === 'listening') stopRecording();
-            else if (orbState === 'idle') startRecording();
-          }}
-        />
+      {/* ── 3-Column layout (desktop) | stacked (mobile) ── */}
+      <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-0">
 
-        {/* Dynamic Orb Status Label */}
-        <div className="text-center">
-          <span className="text-xs font-mono uppercase tracking-widest text-slate-400">
-            {orbState === 'idle' && 'Tap orb or mic to speak'}
-            {orbState === 'listening' && `Listening... (${formatTimer(timerSecs)} / 0:30)`}
-            {orbState === 'processing' && 'Transcribing with Prisma STT & Engine...'}
-            {orbState === 'speaking' && 'Speaking via Gnani Timbre (Shivani)...'}
-            {orbState === 'error' && 'Encountered error — retry below'}
-          </span>
+        {/* ─── LEFT: Call info + controls ─── */}
+        <div
+          className="flex flex-col gap-4 p-5 border-r overflow-y-auto"
+          style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0C1120' }}
+        >
+          {/* Timer / status */}
+          <div className="text-center pt-2">
+            <div
+              className="text-3xl font-bold font-heading mb-1"
+              style={{ color: orbState === 'listening' ? '#32D8E8' : '#E8EDF9', fontFamily: 'JetBrains Mono, monospace' }}
+            >
+              {formatTimer(timerSecs)}
+            </div>
+            <p className="text-xs text-[#9AA7BE]">
+              {orbState === 'listening' ? `Recording… / 0:${MAX_RECORDING_SECONDS}` : 'Call timer'}
+            </p>
+          </div>
+
+          {/* Slot progress */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] text-[#9AA7BE] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Slots</span>
+              <span className="text-[10px] font-bold" style={{ color: accent, fontFamily: 'JetBrains Mono, monospace' }}>{filledCount}/{totalSlots}</span>
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${(filledCount / totalSlots) * 100}%`, background: accent }}
+              />
+            </div>
+          </div>
+
+          {/* Prisma meta */}
+          {prismaMeta && (
+            <div
+              className="p-2.5 rounded-xl text-[10px] space-y-1"
+              style={{ background: 'rgba(8,11,24,0.6)', border: '1px solid rgba(255,255,255,0.06)', fontFamily: 'JetBrains Mono, monospace' }}
+            >
+              <div className="text-[#9AA7BE]">Prisma STT</div>
+              <div className="text-[#E8EDF9] truncate">"{prismaMeta.transcript}"</div>
+              <div className="text-[#4A5568]">{prismaMeta.language_code}</div>
+            </div>
+          )}
+
+          {/* Errors */}
+          {micError && (
+            <div className="p-3 rounded-xl flex items-center gap-2 text-xs" style={{ background: 'rgba(255,100,124,0.10)', border: '1px solid rgba(255,100,124,0.25)', color: '#FF647C' }}>
+              <MicOff className="w-4 h-4 shrink-0" />
+              <span>{micError}</span>
+            </div>
+          )}
+          {errorMessage && (
+            <div className="p-3 rounded-xl flex items-center gap-2 text-xs" style={{ background: 'rgba(255,100,124,0.10)', border: '1px solid rgba(255,100,124,0.25)', color: '#FF647C' }}>
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
         </div>
 
-        {/* Controls beneath the orb */}
-        <div className="flex items-center gap-3 mt-1">
-          {orbState !== 'listening' ? (
-            <button
-              onClick={startRecording}
-              disabled={submittingTurn}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-xs text-slate-950 shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50"
-              style={{ backgroundColor: accent }}
-            >
-              <Mic className="w-4 h-4" />
-              <span>Record Answer</span>
-            </button>
-          ) : (
-            <button
-              onClick={stopRecording}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-            >
-              <Square className="w-4 h-4 fill-current" />
-              <span>Done Speaking</span>
-            </button>
-          )}
-
-          {lastAgentAudioUrl && (
-            <button
-              onClick={() => playAgentAudio(lastAgentAudioUrl)}
-              className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-white/10 transition-colors cursor-pointer"
-            >
-              <Play className="w-3.5 h-3.5" />
-              <span>Replay Reply</span>
-            </button>
-          )}
-
-          {orbState === 'speaking' && (
-            <button
-              onClick={() => {
-                if (audioPlayerRef.current) audioPlayerRef.current.pause();
-                setOrbState('idle');
-              }}
-              className="px-3 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-white/10 transition-colors cursor-pointer"
-            >
-              Stop Audio
-            </button>
-          )}
-
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-400 border border-white/10 transition-colors cursor-pointer"
-            title="Upload audio clip"
+        {/* ─── CENTRE: Orb + Transcript ─── */}
+        <div className="flex flex-col overflow-hidden">
+          {/* Orb area */}
+          <div
+            className="shrink-0 flex flex-col items-center justify-center gap-5 py-10 px-6"
+            style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
           >
-            <Upload className="w-3.5 h-3.5" />
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a,.webm"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </div>
+            <VoiceOrb
+              state={orbState}
+              accentColor={accent}
+              micVolume={micVolume}
+              onClick={() => {
+                if (orbState === 'listening') stopRecording();
+                else if (orbState === 'idle') startRecording();
+              }}
+            />
 
-        {/* Errors */}
-        {micError && (
-          <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2 mt-2">
-            <MicOff className="w-4 h-4 shrink-0" />
-            <span>{micError}</span>
-          </div>
-        )}
-        {errorMessage && (
-          <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2 mt-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-      </div>
+            {/* Controls */}
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              {orbState !== 'listening' ? (
+                <button
+                  onClick={startRecording}
+                  disabled={submittingTurn}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer border-none disabled:opacity-50 transition-transform hover:scale-105 active:scale-95"
+                  style={{ background: accent, color: '#fff', boxShadow: `0 0 20px ${accent}40` }}
+                >
+                  <Mic className="w-4 h-4" />
+                  <span>Record</span>
+                </button>
+              ) : (
+                <button
+                  onClick={stopRecording}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer border-none transition-transform hover:scale-105 active:scale-95"
+                  style={{ background: '#FF647C', color: '#fff' }}
+                >
+                  <Square className="w-4 h-4 fill-current" />
+                  <span>Done Speaking</span>
+                </button>
+              )}
 
-      {/* Main 2-Column: Left Chat View, Right Extracted Slots */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: Chat history & Typing Input */}
-        <div className="lg:col-span-7 space-y-4">
+              {lastAgentAudioUrl && (
+                <button
+                  onClick={() => playAgentAudio(lastAgentAudioUrl)}
+                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer border transition-colors"
+                  style={{ background: 'rgba(23,31,51,0.8)', borderColor: 'rgba(255,255,255,0.10)', color: '#9AA7BE' }}
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  Replay
+                </button>
+              )}
+
+              {orbState === 'speaking' && (
+                <button
+                  onClick={() => { if (audioPlayerRef.current) audioPlayerRef.current.pause(); setOrbState('idle'); }}
+                  className="px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer border transition-colors"
+                  style={{ background: 'rgba(23,31,51,0.8)', borderColor: 'rgba(255,255,255,0.10)', color: '#9AA7BE' }}
+                >
+                  Stop Audio
+                </button>
+              )}
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 rounded-xl cursor-pointer border transition-colors"
+                style={{ background: 'rgba(23,31,51,0.8)', borderColor: 'rgba(255,255,255,0.10)', color: '#9AA7BE' }}
+                title="Upload audio file"
+              >
+                <Upload className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Transcript area */}
           <div
             ref={chatScrollRef}
-            className="h-[320px] overflow-y-auto p-4 rounded-3xl glass-panel border border-white/10 space-y-3 flex flex-col"
+            className="flex-1 overflow-y-auto p-4 space-y-3"
           >
             {chatHistory.map((turn, idx) => {
               const isCaller = turn.speaker === 'caller';
               return (
-                <div
-                  key={idx}
-                  className={`flex items-start gap-2.5 ${isCaller ? 'justify-end' : 'justify-start'}`}
-                >
+                <div key={idx} className={`flex items-start gap-2.5 ${isCaller ? 'justify-end' : 'justify-start'}`}>
                   {!isCaller && (
                     <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border mt-0.5"
-                      style={{
-                        backgroundColor: `${accent}25`,
-                        borderColor: `${accent}40`,
-                        color: accent,
-                      }}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 border"
+                      style={{ background: `${accent}18`, borderColor: `${accent}35`, color: accent }}
                     >
                       <Bot className="w-3.5 h-3.5" />
                     </div>
                   )}
-
                   <div
-                    className={`p-3 rounded-2xl max-w-[85%] text-xs leading-relaxed font-tamil shadow-sm ${
+                    className="max-w-[80%] p-3 rounded-2xl text-xs leading-relaxed font-tamil"
+                    style={
                       isCaller
-                        ? 'bg-slate-800 text-white border border-white/10 rounded-tr-xs'
-                        : 'bg-slate-950/80 text-slate-200 border border-white/10 rounded-tl-xs'
-                    }`}
-                    style={!isCaller ? { borderLeft: `3px solid ${accent}` } : {}}
+                        ? { background: 'rgba(23,31,51,0.9)', border: '1px solid rgba(255,255,255,0.09)', color: '#E8EDF9' }
+                        : { background: 'rgba(8,11,24,0.7)', border: `1px solid rgba(255,255,255,0.07)`, borderLeft: `3px solid ${accent}`, color: '#E8EDF9' }
+                    }
                   >
-                    <span className="text-[10px] font-mono uppercase tracking-wider block mb-1 opacity-60">
+                    <span className="block text-[9px] mb-1 font-mono" style={{ color: '#4A5568' }}>
                       {isCaller ? 'Caller' : 'Vaayil Agent (Shivani)'}
                     </span>
                     {turn.text}
                   </div>
-
                   {isCaller && (
-                    <div className="w-7 h-7 rounded-lg bg-slate-800 border border-white/10 flex items-center justify-center shrink-0 text-slate-300 mt-0.5">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(23,31,51,0.9)', border: '1px solid rgba(255,255,255,0.08)', color: '#9AA7BE' }}>
                       <UserIcon className="w-3.5 h-3.5" />
                     </div>
                   )}
                 </div>
               );
             })}
-
             {submittingTurn && (
-              <div className="flex items-center gap-2 text-slate-400 text-xs py-1">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
-                <span>Processing turn...</span>
+              <div className="flex items-center gap-2 text-xs" style={{ color: '#9AA7BE' }}>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: accent }} />
+                <span>Processing turn…</span>
               </div>
             )}
           </div>
 
-          {/* Typing test fallback */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!typedInput.trim() || submittingTurn) return;
-              const txt = typedInput;
-              setTypedInput('');
-              dispatchTurn(txt);
-            }}
-            className="relative flex items-center"
-          >
-            <input
-              type="text"
-              value={typedInput}
-              onChange={(e) => setTypedInput(e.target.value)}
-              placeholder="Or type reply to test (e.g. 'En peyar Saravanan, phone 9840123456')..."
-              disabled={submittingTurn}
-              className="w-full pl-4 pr-12 py-3 rounded-2xl bg-slate-900 border border-white/10 text-white text-xs font-tamil placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={!typedInput.trim() || submittingTurn}
-              className="absolute right-2 p-2 rounded-xl text-slate-950 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              style={{ backgroundColor: accent }}
+          {/* Typed input */}
+          <div className="shrink-0 p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (!typedInput.trim() || submittingTurn) return; const txt = typedInput; setTypedInput(''); dispatchTurn(txt); }}
+              className="relative flex items-center"
             >
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          </form>
-
-          {/* Prisma STT debug tag */}
-          {prismaMeta && (
-            <div className="px-3 py-1.5 rounded-xl bg-slate-900/60 border border-white/5 flex items-center justify-between text-[11px] font-mono text-slate-400">
-              <span className="truncate mr-2">Prisma STT: "{prismaMeta.transcript}"</span>
-              <span className="shrink-0">{prismaMeta.language_code}</span>
-            </div>
-          )}
+              <input
+                type="text"
+                value={typedInput}
+                onChange={(e) => setTypedInput(e.target.value)}
+                placeholder="Or type your reply here… (தமிழ் / Tanglish / English)"
+                disabled={submittingTurn}
+                className="input-base pr-11 font-tamil"
+              />
+              <button
+                type="submit"
+                disabled={!typedInput.trim() || submittingTurn}
+                className="absolute right-2 p-2 rounded-lg cursor-pointer border-none disabled:opacity-40 transition-colors"
+                style={{ background: accent, color: '#fff' }}
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          </div>
         </div>
 
-        {/* Right: Extracted Details Live Slot Panel */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="p-5 rounded-3xl glass-panel border border-white/10 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
-                  State Machine
-                </span>
-                <h3 className="text-sm font-bold text-white flex items-center gap-1.5 font-tamil">
-                  <Sparkles className="w-3.5 h-3.5" style={{ color: accent }} />
-                  நேரலை விவரங்கள் (Live Slots)
-                </h3>
-              </div>
+        {/* ─── RIGHT: Extracted Details + Confirmation ─── */}
+        <div
+          className="flex flex-col gap-4 p-5 border-l overflow-y-auto"
+          style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0C1120' }}
+        >
+          {/* Slots header */}
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 shrink-0" style={{ color: accent }} />
+            <span className="text-xs font-semibold text-[#E8EDF9] font-tamil">நேரலை விவரங்கள்</span>
+          </div>
 
-              <span
-                className={`text-[10px] font-mono px-2.5 py-1 rounded-full uppercase tracking-wider font-bold border ${
-                  engineState === 'completed'
-                    ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
-                    : engineState === 'confirming'
-                      ? 'bg-amber-950/60 border-amber-500/40 text-amber-300'
-                      : 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
-                }`}
-              >
-                {engineState}
-              </span>
-            </div>
-
-            {/* List of slots */}
-            <div className="space-y-2.5">
-              {sectorDetail.slots.map((slot) => {
-                const isFilled = extractedSlots[slot.name] !== undefined && extractedSlots[slot.name] !== null;
-                const isTarget = nextSlot === slot.name && !isFilled;
-                const val = extractedSlots[slot.name];
-
-                return (
-                  <div
-                    key={slot.name}
-                    className={`p-3 rounded-2xl border transition-all text-left ${
-                      isFilled
-                        ? 'bg-emerald-950/20 border-emerald-500/30'
-                        : isTarget
-                          ? 'bg-cyan-950/20 border-cyan-500/40 animate-pulse'
-                          : 'bg-slate-900/50 border-white/5 opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-medium text-slate-300 font-tamil">
-                        {slot.label_ta} ({slot.label_en})
-                      </span>
-                      {isFilled && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-                      {isTarget && (
-                        <span className="text-[9px] font-mono text-cyan-400 uppercase tracking-wider">
-                          Next Required
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-1 text-xs font-semibold">
-                      {isFilled ? (
-                        <span className="text-white font-mono">{String(val)}</span>
-                      ) : (
-                        <span className="text-slate-500 text-[11px] italic font-mono">
-                          {slot.required ? 'Waiting for input...' : 'Optional'}
-                        </span>
-                      )}
-                    </div>
+          {/* Slot list */}
+          <div className="space-y-2">
+            {sectorDetail.slots.map((slot) => {
+              const isFilled = extractedSlots[slot.name] !== undefined && extractedSlots[slot.name] !== null;
+              const isTarget = nextSlot === slot.name && !isFilled;
+              const val = extractedSlots[slot.name];
+              return (
+                <div
+                  key={slot.name}
+                  className="p-3 rounded-xl transition-all"
+                  style={{
+                    background: isFilled ? 'rgba(66,214,164,0.08)' : isTarget ? 'rgba(50,216,232,0.07)' : 'rgba(8,11,24,0.5)',
+                    border: `1px solid ${isFilled ? 'rgba(66,214,164,0.25)' : isTarget ? 'rgba(50,216,232,0.25)' : 'rgba(255,255,255,0.05)'}`,
+                    opacity: (!isFilled && !isTarget) ? 0.65 : 1,
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-medium text-[#9AA7BE] font-tamil">{slot.label_ta}</span>
+                    {isFilled && <CheckCircle2 className="w-3.5 h-3.5 text-[#42D6A4]" />}
+                    {isTarget && <span className="text-[9px] text-[#32D8E8]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>NEXT</span>}
                   </div>
-                );
-              })}
-            </div>
+                  <div className="text-xs font-semibold">
+                    {isFilled
+                      ? <span className="text-[#E8EDF9]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{String(val)}</span>
+                      : <span className="text-[#4A5568] italic">{slot.required ? 'Waiting…' : 'Optional'}</span>
+                    }
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-            {/* Final Confirmation Banner */}
-            {engineState === 'confirming' && (
-              <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 space-y-3 text-left">
-                <p className="text-xs font-bold text-amber-300 font-tamil">
-                  அனைத்து விவரங்களும் பெறப்பட்டன!
-                </p>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Summary presented. Click Confirm to save into database, or Edit to update slots.
-                </p>
-                <div className="flex items-center gap-2 pt-1">
+          {/* Confirmation card */}
+          {engineState === 'confirming' && (
+            <Card variant="default" className="p-4 space-y-3" style={{ borderColor: 'rgba(255,191,105,0.30)' }}>
+              <div>
+                <p className="text-xs font-bold text-[#FFBF69] font-tamil mb-1">அனைத்து விவரங்களும் பெறப்பட்டன!</p>
+                <p className="text-[11px] text-[#9AA7BE] leading-relaxed">Review and confirm to save to database.</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      setSubmittingTurn(true);
+                      const b = await api.confirmBookingFromCall({ session_id: sessionId || 'sess-manual', sector_id: sectorDetail.id, slots: extractedSlots });
+                      setEngineState('completed');
+                      const confirmMsg = `மிக்க நன்றி! உங்கள் முன்பதிவு எண் ${b.reference_number}.`;
+                      api.speakText(confirmMsg, 'ta-IN', 'Shivani').then((blob) => {
+                        const url = URL.createObjectURL(blob); setLastAgentAudioUrl(url); playAgentAudio(url);
+                      }).catch(() => {});
+                    } catch (err: any) { setErrorMessage(err.message || 'Confirmation failed'); }
+                    finally { setSubmittingTurn(false); }
+                  }}
+                  className="w-full py-2 rounded-xl font-bold text-sm cursor-pointer border-none text-center transition-colors"
+                  style={{ background: '#42D6A4', color: '#080B18' }}
+                >
+                  Confirm & Save
+                </button>
+                <div className="flex gap-2">
                   <button
-                    onClick={async () => {
-                      try {
-                        setSubmittingTurn(true);
-                        const b = await api.confirmBookingFromCall({
-                          session_id: sessionId || 'sess-manual',
-                          sector_id: sectorDetail.id,
-                          slots: extractedSlots,
-                        });
-                        setEngineState('completed');
-                        // Vocalize confirmation with Timbre
-                        const confirmMsg = `மிக்க நன்றி! உங்கள் முன்பதிவு எண் ${b.reference_number}.`;
-                        api.speakText(confirmMsg, 'ta-IN', 'Shivani').then((blob) => {
-                          const url = URL.createObjectURL(blob);
-                          setLastAgentAudioUrl(url);
-                          playAgentAudio(url);
-                        }).catch(() => {});
-                      } catch (err: any) {
-                        setErrorMessage(err.message || 'Confirmation failed');
-                      } finally {
-                        setSubmittingTurn(false);
-                      }
-                    }}
-                    className="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors cursor-pointer text-center"
+                    onClick={() => { setEngineState('collecting'); dispatchTurn('illa, details mathanum'); }}
+                    className="flex-1 py-2 rounded-xl text-xs font-semibold cursor-pointer border transition-colors"
+                    style={{ background: 'rgba(23,31,51,0.8)', borderColor: 'rgba(255,255,255,0.10)', color: '#9AA7BE' }}
                   >
-                    Confirm & Save (உறுதி செய்)
+                    Edit
                   </button>
-
-                  <button
-                    onClick={() => {
-                      setEngineState('collecting');
-                      dispatchTurn('illa, details mathanum');
-                    }}
-                    className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-white/10 transition-colors cursor-pointer"
-                  >
-                    Edit (மாற்று)
-                  </button>
-
                   <button
                     onClick={resetCall}
-                    className="px-3 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold border border-rose-500/30 transition-colors cursor-pointer"
+                    className="flex-1 py-2 rounded-xl text-xs font-semibold cursor-pointer border transition-colors"
+                    style={{ background: 'rgba(255,100,124,0.10)', borderColor: 'rgba(255,100,124,0.25)', color: '#FF647C' }}
                   >
                     Cancel
                   </button>
                 </div>
               </div>
-            )}
+            </Card>
+          )}
 
-            {engineState === 'completed' && (
-              <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 space-y-2 text-left">
-                <p className="text-xs font-bold text-emerald-300 font-tamil">
-                  முன்பதிவு தயார் (Call Completed)
-                </p>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  The full voice loop has successfully concluded with Timbre voice playback!
-                </p>
-              </div>
-            )}
-          </div>
+          {engineState === 'completed' && (
+            <Card variant="default" className="p-4 space-y-2" style={{ borderColor: 'rgba(66,214,164,0.25)' }}>
+              <p className="text-xs font-bold text-[#42D6A4] font-tamil">முன்பதிவு தயார் ✓</p>
+              <p className="text-[11px] text-[#9AA7BE]">Call completed. Booking saved to database with Timbre voice confirmation.</p>
+            </Card>
+          )}
         </div>
       </div>
     </div>

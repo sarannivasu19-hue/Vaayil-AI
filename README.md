@@ -160,3 +160,83 @@ Per project safety rules, **all proposed rule improvements are staged for user r
 - **[x] Phase 8:** 3D Vaayil Hub with central portal, orbital sector nodes, and premium UI polish.
 - **[x] Phase 9:** Noise Lab, DSP degradation pipeline, and Safety Test Sheet with 180-sentence benchmark.
 - **[ ] Phase 10:** Polish, responsiveness, comprehensive automated test suites & deployment.
+
+---
+
+## 🧪 Testing and Limitations
+
+### Noise Lab
+
+The **Noise Lab** (accessible from the sidebar: *Noise Lab*) lets you stress-test Gnani Prisma STT under controlled synthetic noise conditions.
+
+#### How to run a Noise Lab test
+1. Navigate to **Noise Lab** in the workspace sidebar.
+2. Record a clean audio sample (use the **Record Clean Audio** button) or upload a `.wav`/`.webm` file.
+3. Type the **exact sentence spoken** in the *Reference Text* field, or pick a preset.
+4. Select noise levels (Light / Medium / Heavy) and optionally enable PSTN Phone Simulation.
+5. Click **Run Real Noise Benchmark on Prisma STT**.
+6. Results appear side-by-side: the original baseline and each degraded variant, with real Prisma transcripts.
+7. Optionally **Save Run** to store results, or **Export CSV** for a spreadsheet.
+
+#### Tamil sentence example
+> Record yourself saying: **"நாளைக்கு மருத்துவர் appointment காலை 10 மணிக்கு confirm பண்ணுங்க"**  
+> Type that sentence as the Reference Text and select language mode **Tanglish**.
+
+#### Metrics explained
+| Metric | Meaning |
+|--------|---------|
+| **Word Accuracy %** | Percentage of reference words correctly transcribed. Higher is better. |
+| **WER % (Word Error Rate)** | Fraction of words with substitution, deletion or insertion errors. **Lower is better.** Formula: `WER = (S + D + I) / N_ref` |
+| **S / D / I** | Substitutions / Deletions / Insertions — the three error types in Levenshtein alignment. |
+| **Latency (ms)** | Round-trip time for the Prisma API call. |
+
+#### ⚠️ Limitations
+- **Synthetic noise is a rough test, not a guarantee of real-world performance.** Real telephony involves codec artefacts, room acoustics, speaker variation and network jitter that this lab cannot fully replicate.
+- The lab uses `librosa` and `soundfile` for DSP; results depend on the input file format and sample rate.
+- Prisma API quotas and network latency affect results independently of audio quality.
+- Raw audio is never stored permanently — temporary files are deleted immediately after each experiment.
+- WER is computed on word tokens; it does not distinguish semantic importance (missing "no" before "chest pain" counts the same as missing "appointment").
+
+---
+
+### Safety Test Sheet
+
+The **Safety Test Sheet** (sidebar: *Safety Test Sheet*) benchmarks the keyword-based urgent-case detector against a labelled dataset of 180 sentences (60 each for Health Help Desk, Clinic and Veterinary sectors).
+
+#### How to run a benchmark
+1. Navigate to **Safety Test Sheet** in the workspace sidebar.
+2. Select a sector filter (All Sectors / Health Help Desk / Clinic / Veterinary).
+3. The benchmark runs automatically on page load; click the sector filter buttons to re-run for a subset.
+4. Review results across four tabs: **Overview**, **Misses**, **False Alarms** and **Suggestions**.
+
+#### Safety Test Sheet run example
+1. Open Safety Test Sheet.
+2. Click **Health Help Desk (60)** filter.
+3. Observe the Recall %, False Alarm Rate % and confusion matrix.
+4. Click the **Misses** tab to see which real urgent cases the detector failed to catch.
+5. Click the **Suggestions** tab for proposed keyword additions — these are presented for review only; the production detector is **not changed** until you approve.
+
+#### Dataset categories
+| Category | Description |
+|----------|-------------|
+| `urgent_case` | Real emergencies — chest pain, heavy bleeding, accidents, snake bite, etc. Must be caught. |
+| `normal_call` | Routine calls — bookings, inquiries, prescription refills. Must NOT be flagged. |
+| `negated` | Sentences with explicit negation ("no chest pain", "nenju vali illa"). Must NOT trigger alert. |
+| `past_event` | Historical mentions ("last year I had a heart attack"). Must NOT trigger alert. |
+| `spelling_variant` | Common STT errors and phonetic variants ("nenjovaly", "accidant"). |
+
+#### Metrics explained
+| Metric | Formula | Target |
+|--------|---------|--------|
+| **Recall (Sensitivity)** | TP / (TP + FN) | As high as possible — missing an emergency is the most dangerous error |
+| **False Alarm Rate** | FP / (FP + TN) | As low as possible — unnecessary alarms erode trust |
+| **Specificity** | TN / (TN + FP) | Complement of false alarm rate |
+| **Accuracy** | (TP + TN) / Total | Overall correct classifications |
+
+#### ⚠️ Limitations
+- **Keyword-based alert, not a medical diagnosis.** The detector matches words and phrases; it has no clinical reasoning capability.
+- Negation and past-event handling uses simple pattern rules — complex, nested or unusual sentence structures may evade detection.
+- The 180-sentence dataset covers common scenarios but cannot represent the full diversity of real caller language.
+- Results depend on the current keyword list in Settings. Editing keywords changes recall and false-alarm rates.
+- Always verify any flagged alert with a qualified medical or veterinary professional before taking clinical action.
+- The system is designed to alert human staff, not to replace them.

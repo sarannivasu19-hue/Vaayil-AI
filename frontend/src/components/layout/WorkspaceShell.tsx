@@ -10,8 +10,9 @@ import { DashboardView } from '../workspace/DashboardView';
 import { SettingsManager } from '../workspace/SettingsManager';
 import { NoiseLabView } from '../workspace/NoiseLabView';
 import { SafetyTestSheetView } from '../workspace/SafetyTestSheetView';
+import { UrgentAlertsView } from '../workspace/UrgentAlertsView';
 import { DynamicIcon } from '../ui/Icons';
-import { Loader2, ArrowLeft, LogOut } from 'lucide-react';
+import { Loader2, LogOut, ArrowLeft, Search, Globe } from 'lucide-react';
 
 interface WorkspaceShellProps {
   sector: Sector;
@@ -20,6 +21,17 @@ interface WorkspaceShellProps {
   onReturnHub?: () => void;
 }
 
+const TAB_LABELS: Record<WorkspaceTab, string> = {
+  'dashboard':      'Dashboard',
+  'live-call':      'Live Call Console',
+  'bookings':       'Bookings',
+  'call-logs':      'Call Logs',
+  'urgent-alerts':  'Urgent Alerts',
+  'noise-lab':      'Noise Lab',
+  'safety-test':    'Safety Test Sheet',
+  'settings':       'Settings',
+};
+
 export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
   sector,
   user,
@@ -27,7 +39,7 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
   onReturnHub,
 }) => {
   const [sectorDetail, setSectorDetail] = useState<SectorDetail | null>(null);
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('bookings');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(true);
 
@@ -48,16 +60,34 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
 
   if (loadingDetail || !sectorDetail) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#070b14] text-white">
-        <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mb-3" />
-        <p className="text-xs font-mono text-slate-400">Loading {sector.name} Package...</p>
+      <div className="min-h-screen w-full flex flex-col items-center justify-center" style={{ background: '#080B18' }}>
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center"
+            style={{ background: `${sector.accent_color}20`, color: sector.accent_color }}
+          >
+            <DynamicIcon name={sector.icon} className="w-6 h-6" />
+          </div>
+          <Loader2 className="w-5 h-5 animate-spin" style={{ color: sector.accent_color }} />
+          <p className="text-xs text-[#9AA7BE]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+            Loading {sector.name}…
+          </p>
+        </div>
       </div>
     );
   }
 
+  const accent = sectorDetail.accent_color;
+
+  /* Live Call gets full width — no max-w constraint */
+  const isFullWidth = activeTab === 'live-call';
+
   return (
-    <div className="flex h-screen w-full bg-[#070b14] text-slate-100 overflow-hidden relative">
-      {/* Desktop Collapsible Sidebar */}
+    <div
+      className="flex h-screen w-full overflow-hidden relative"
+      style={{ background: '#080B18', color: '#E8EDF9' }}
+    >
+      {/* Desktop sidebar */}
       <Sidebar
         sector={sectorDetail}
         user={user}
@@ -69,91 +99,126 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
         onLogout={onLogout}
       />
 
-      {/* Main Content Area */}
+      {/* Main content column */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
-        {/* Workspace Top Header Bar */}
-        <header className="px-5 py-3 border-b border-white/10 bg-slate-950/60 backdrop-blur-md flex items-center justify-between gap-4 shrink-0 z-20">
-          <div className="flex items-center gap-3 truncate text-left">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
-              style={{
-                backgroundColor: `${sectorDetail.accent_color}25`,
-                borderColor: `${sectorDetail.accent_color}50`,
-                color: sectorDetail.accent_color,
-              }}
-            >
-              <DynamicIcon name={sectorDetail.icon} className="w-4 h-4" />
-            </div>
 
-            <div className="truncate">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white truncate font-tamil">
-                  {sectorDetail.display_name_ta}
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 border border-white/10 text-slate-400 hidden sm:inline-block">
-                  {sectorDetail.name}
-                </span>
-              </div>
+        {/* ── Top header bar ── */}
+        <header
+          className="shrink-0 flex items-center justify-between gap-4 px-5 h-14"
+          style={{
+            background: 'rgba(10,14,28,0.90)',
+            borderBottom: '1px solid rgba(255,255,255,0.07)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div
+              className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: `${accent}20`, color: accent }}
+            >
+              <DynamicIcon name={sectorDetail.icon} className="w-3.5 h-3.5" />
             </div>
+            <span className="text-xs text-[#9AA7BE] hidden sm:block font-tamil truncate">
+              {sectorDetail.display_name_ta}
+            </span>
+            <span className="text-xs text-[#4A5568] hidden sm:block">/</span>
+            <span className="text-xs font-semibold text-[#E8EDF9] truncate">
+              {TAB_LABELS[activeTab]}
+            </span>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          {/* Right controls */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Search (icon only — placeholder, no functionality added) */}
+            <button
+              className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg transition-colors cursor-pointer border-none"
+              style={{ background: 'rgba(23,31,51,0.7)', color: '#9AA7BE' }}
+              aria-label="Search (coming soon)"
+              title="Search"
+              disabled
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Language indicator */}
+            <button
+              className="hidden sm:flex items-center gap-1.5 h-8 px-2.5 rounded-lg transition-colors cursor-pointer border text-xs"
+              style={{ background: 'rgba(23,31,51,0.7)', borderColor: 'rgba(255,255,255,0.08)', color: '#9AA7BE' }}
+              aria-label="Language settings"
+              title="Language settings"
+              onClick={() => setActiveTab('settings')}
+            >
+              <Globe className="w-3 h-3 shrink-0" />
+              <span className="font-tamil hidden md:block">தமிழ் / EN</span>
+            </button>
+
+            {/* Return to Hub */}
             {onReturnHub && (
               <button
                 onClick={onReturnHub}
-                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 h-8 px-3 rounded-lg transition-colors cursor-pointer border text-xs font-medium"
+                style={{ background: 'rgba(23,31,51,0.7)', borderColor: 'rgba(255,255,255,0.08)', color: '#9AA7BE' }}
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">Hub</span>
               </button>
             )}
 
-            <button
-              onClick={onLogout}
-              title="Log Out"
-              className="p-1.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            {/* User chip + logout */}
+            <div className="flex items-center gap-1.5">
+              <div
+                className="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-lg border"
+                style={{ background: 'rgba(23,31,51,0.7)', borderColor: 'rgba(255,255,255,0.08)' }}
+              >
+                <div
+                  className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-bold shrink-0"
+                  style={{ background: `${accent}25`, color: accent, fontFamily: 'Sora, sans-serif' }}
+                >
+                  {user.username.slice(0, 2).toUpperCase()}
+                </div>
+                <span className="text-xs text-[#E8EDF9] font-medium hidden md:block max-w-[100px] truncate">
+                  {user.full_name.split(' ')[0]}
+                </span>
+              </div>
+
+              <button
+                onClick={onLogout}
+                title="Log out"
+                aria-label="Log out"
+                className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors cursor-pointer border"
+                style={{
+                  background: 'rgba(255,100,124,0.10)',
+                  borderColor: 'rgba(255,100,124,0.25)',
+                  color: '#FF647C',
+                }}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </header>
 
-        {/* Scrollable View Container */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 pb-24 md:pb-8">
-          <div className="max-w-6xl mx-auto">
-            {activeTab === 'bookings' && (
-              <BookingsManager sectorDetail={sectorDetail} />
-            )}
-            {activeTab === 'dashboard' && (
-              <DashboardView
-                sectorDetail={sectorDetail}
-                onNavigateTab={(tab) => setActiveTab(tab)}
-              />
-            )}
-            {activeTab === 'live-call' && (
-              <LiveCallPage sectorDetail={sectorDetail} />
-            )}
-            {activeTab === 'call-logs' && (
-              <CallLogsManager sectorDetail={sectorDetail} />
-            )}
-            {activeTab === 'noise-lab' && (
-              <NoiseLabView sectorDetail={sectorDetail} />
-            )}
-            {activeTab === 'safety-test' && (
-              <SafetyTestSheetView sectorDetail={sectorDetail} />
-            )}
-            {activeTab === 'settings' && (
-              <SettingsManager sectorDetail={sectorDetail} />
-            )}
+        {/* ── Page content ── */}
+        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+          <div className={isFullWidth ? 'h-full' : 'max-w-6xl mx-auto px-4 sm:px-6 py-6'}>
+            {activeTab === 'dashboard'      && <DashboardView      sectorDetail={sectorDetail} onNavigateTab={(tab) => setActiveTab(tab)} />}
+            {activeTab === 'live-call'      && <LiveCallPage        sectorDetail={sectorDetail} />}
+            {activeTab === 'bookings'       && <BookingsManager     sectorDetail={sectorDetail} />}
+            {activeTab === 'call-logs'      && <CallLogsManager     sectorDetail={sectorDetail} />}
+            {activeTab === 'urgent-alerts'  && <UrgentAlertsView    sectorDetail={sectorDetail} />}
+            {activeTab === 'noise-lab'      && <NoiseLabView        sectorDetail={sectorDetail} />}
+            {activeTab === 'safety-test'    && <SafetyTestSheetView sectorDetail={sectorDetail} />}
+            {activeTab === 'settings'       && <SettingsManager     sectorDetail={sectorDetail} />}
           </div>
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile bottom navigation */}
       <BottomNav
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        accentColor={sectorDetail.accent_color}
+        accentColor={accent}
       />
     </div>
   );

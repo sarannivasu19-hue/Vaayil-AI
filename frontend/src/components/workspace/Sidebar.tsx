@@ -15,12 +15,14 @@ import {
   Volume2,
   ShieldAlert,
 } from 'lucide-react';
+import { clsx } from 'clsx';
 
 export type WorkspaceTab =
   | 'dashboard'
   | 'live-call'
   | 'bookings'
   | 'call-logs'
+  | 'urgent-alerts'
   | 'noise-lab'
   | 'safety-test'
   | 'settings';
@@ -36,6 +38,46 @@ interface SidebarProps {
   onLogout: () => void;
 }
 
+/* Doorway logo mark (same as Navbar) */
+const ArchMark: React.FC<{ color: string; size?: number }> = ({ color, size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 28 28" fill="none" aria-hidden="true">
+    <path
+      d="M5 22V13C5 8.582 9.029 5 14 5C18.971 5 23 8.582 23 13V22"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      fill="none"
+    />
+    <circle cx="14" cy="13.5" r="2" fill={color} opacity="0.8"/>
+  </svg>
+);
+
+const NAV_GROUPS = [
+  {
+    label: 'WORKSPACE',
+    items: [
+      { id: 'dashboard' as WorkspaceTab,  label_en: 'Dashboard',         label_ta: 'டாஷ்போர்டு',         Icon: LayoutDashboard },
+      { id: 'live-call' as WorkspaceTab,  label_en: 'Live Call Console', label_ta: 'நேரடி அழைப்பு',       Icon: PhoneCall       },
+      { id: 'bookings'  as WorkspaceTab,  label_en: 'Bookings',          label_ta: 'முன்பதிவுகள்',         Icon: CalendarDays    },
+      { id: 'call-logs' as WorkspaceTab,  label_en: 'Call Logs',         label_ta: 'அழைப்பு பதிவுகள்',    Icon: FileText        },
+      { id: 'urgent-alerts' as WorkspaceTab, label_en: 'Urgent Alerts',  label_ta: 'அவசர எச்சரிக்கை',    Icon: ShieldAlert     },
+    ],
+  },
+  {
+    label: 'TOOLS',
+    items: [
+      { id: 'noise-lab'    as WorkspaceTab, label_en: 'Noise Lab',          label_ta: 'இரைச்சல் ஆய்வகம்', Icon: Volume2     },
+      { id: 'safety-test'  as WorkspaceTab, label_en: 'Safety Test Sheet',  label_ta: 'பாதுகாப்பு சோதனை', Icon: ShieldAlert  },
+    ],
+  },
+  {
+    label: 'CONFIG',
+    items: [
+      { id: 'settings' as WorkspaceTab, label_en: 'Settings', label_ta: 'அமைப்புகள்', Icon: Settings },
+    ],
+  },
+];
+
 export const Sidebar: React.FC<SidebarProps> = ({
   sector,
   user,
@@ -46,181 +88,181 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onReturnHub,
   onLogout,
 }) => {
-  const navItems = [
-    {
-      id: 'dashboard' as WorkspaceTab,
-      label_en: 'Dashboard',
-      label_ta: 'டாஷ்போர்டு',
-      icon: LayoutDashboard,
-      badge: 'Preview',
-    },
-    {
-      id: 'live-call' as WorkspaceTab,
-      label_en: 'Live Call Console',
-      label_ta: 'நேரடி அழைப்பு',
-      icon: PhoneCall,
-      badge: 'Phase 3/5',
-    },
-    {
-      id: 'bookings' as WorkspaceTab,
-      label_en: 'Bookings & Requests',
-      label_ta: 'முன்பதிவுகள்',
-      icon: CalendarDays,
-      badge: 'Active',
-    },
-    {
-      id: 'call-logs' as WorkspaceTab,
-      label_en: 'Call Logs & Intel',
-      label_ta: 'அழைப்பு பதிவுகள்',
-      icon: FileText,
-      badge: 'Phase 6',
-    },
-    {
-      id: 'noise-lab' as WorkspaceTab,
-      label_en: 'Noise Lab',
-      label_ta: 'இரைச்சல் ஆய்வகம்',
-      icon: Volume2,
-      badge: 'Phase 9',
-    },
-    {
-      id: 'safety-test' as WorkspaceTab,
-      label_en: 'Safety Test Sheet',
-      label_ta: 'பாதுகாப்பு சோதனை',
-      icon: ShieldAlert,
-      badge: 'Phase 9',
-    },
-    {
-      id: 'settings' as WorkspaceTab,
-      label_en: 'Workspace Settings',
-      label_ta: 'அமைப்புகள்',
-      icon: Settings,
-      badge: 'Phase 6',
-    },
-  ];
+  const accent = sector.accent_color;
 
   return (
     <aside
-      className={`hidden md:flex flex-col justify-between border-r border-white/10 bg-slate-950/80 backdrop-blur-xl transition-all duration-300 relative z-30 shrink-0 ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}
+      className={clsx(
+        'hidden md:flex flex-col h-full border-r shrink-0 transition-all duration-200 relative z-30',
+        isCollapsed ? 'w-[72px]' : 'w-[240px]',
+      )}
+      style={{
+        background: '#0C1120',
+        borderColor: 'rgba(255,255,255,0.07)',
+      }}
     >
-      {/* Top Branding Section */}
-      <div>
-        <div className="p-4 border-b border-white/10 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-md"
-              style={{
-                backgroundColor: `${sector.accent_color}25`,
-                borderColor: `${sector.accent_color}50`,
-                color: sector.accent_color,
-              }}
-            >
-              <DynamicIcon name={sector.icon} className="w-5 h-5" />
-            </div>
-            {!isCollapsed && (
-              <div className="flex flex-col text-left truncate">
-                <span className="text-xs font-bold text-white truncate font-tamil">
-                  {sector.display_name_ta.split(' ')[0]} {sector.display_name_ta.split(' ')[1] || ''}
-                </span>
-                <span className="text-[10px] text-slate-400 font-mono truncate">
-                  {sector.id}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-white/10 cursor-pointer transition-colors"
-            title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-          >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
-        </div>
-
-        {/* Navigation Items */}
-        <nav className="p-3 space-y-1.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
-                  isActive
-                    ? 'text-slate-950 font-bold shadow-lg'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-900/60'
-                }`}
-                style={{
-                  backgroundColor: isActive ? sector.accent_color : undefined,
-                  boxShadow: isActive ? `0 0 20px ${sector.accent_color}35` : undefined,
-                }}
-                title={isCollapsed ? item.label_en : undefined}
+      {/* ── Brand header ── */}
+      <div
+        className="flex items-center justify-between px-3 py-4 shrink-0"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+      >
+        {!isCollapsed && (
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <ArchMark color={accent} size={28} />
+            <div className="flex flex-col leading-none overflow-hidden">
+              <span
+                className="text-xs font-bold tracking-widest text-[#E8EDF9] truncate"
+                style={{ fontFamily: 'Sora, sans-serif' }}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : 'text-slate-400'}`} />
-                {!isCollapsed && (
-                  <div className="flex items-center justify-between flex-1 truncate">
-                    <div className="flex flex-col truncate">
-                      <span className="truncate">{item.label_en}</span>
-                      <span className={`text-[10px] font-tamil leading-tight ${isActive ? 'text-slate-900' : 'text-slate-400'}`}>
-                        {item.label_ta}
-                      </span>
-                    </div>
-                    {item.badge && (
-                      <span
-                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md border font-normal ${
-                          isActive
-                            ? 'bg-slate-950/20 border-slate-950/30 text-slate-950'
-                            : item.badge === 'Active'
-                            ? 'bg-cyan-950/70 border-cyan-500/30 text-cyan-300'
-                            : 'bg-slate-900 border-white/10 text-slate-400'
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </nav>
+                VAAYIL AI
+              </span>
+              <span
+                className="text-[9px] text-[#9AA7BE] mt-0.5 truncate font-tamil"
+              >
+                {sector.display_name_ta}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className={clsx(
+            'flex items-center justify-center w-7 h-7 rounded-lg transition-colors cursor-pointer border-none',
+            isCollapsed ? 'mx-auto' : '',
+          )}
+          style={{ background: 'rgba(23,31,51,0.7)', color: '#9AA7BE' }}
+        >
+          {isCollapsed
+            ? <ChevronRight className="w-3.5 h-3.5" />
+            : <ChevronLeft  className="w-3.5 h-3.5" />
+          }
+        </button>
       </div>
 
-      {/* Footer Profile & Actions */}
-      <div className="p-3 border-t border-white/10 space-y-2">
+      {/* ── Sector icon strip (collapsed shows sector icon) ── */}
+      {isCollapsed && (
+        <div className="flex justify-center py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center"
+            style={{ background: `${accent}20`, color: accent }}
+          >
+            <DynamicIcon name={sector.icon} className="w-5 h-5" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Navigation ── */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label}>
+            {/* Section label (hidden when collapsed) */}
+            {!isCollapsed && (
+              <div className="nav-section-label">{group.label}</div>
+            )}
+            {isCollapsed && <div className="my-2 mx-3 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />}
+
+            {group.items.map(({ id, label_en, label_ta, Icon }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  title={isCollapsed ? label_en : undefined}
+                  aria-label={label_en}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={clsx(
+                    'flex items-center gap-2.5 w-full rounded-lg transition-all duration-150 cursor-pointer border-none text-left',
+                    isCollapsed ? 'justify-center p-2.5' : 'px-3 py-2.5',
+                    isActive
+                      ? 'bg-[rgba(128,101,255,0.10)] border-l-[3px] text-[#E8EDF9]'
+                      : 'text-[#9AA7BE] hover:text-[#E8EDF9] hover:bg-[#171F33]',
+                  )}
+                  style={isActive ? { borderLeftColor: accent, paddingLeft: isCollapsed ? undefined : '9px' } : { borderLeft: '3px solid transparent' }}
+                >
+                  <Icon
+                    className="w-[18px] h-[18px] shrink-0"
+                    style={{ color: isActive ? accent : undefined }}
+                  />
+                  {!isCollapsed && (
+                    <div className="flex flex-col leading-none overflow-hidden">
+                      <span className="text-[13px] font-medium truncate">{label_en}</span>
+                      <span className="text-[10px] mt-0.5 truncate font-tamil" style={{ color: isActive ? '#9AA7BE' : '#4A5568' }}>
+                        {label_ta}
+                      </span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </nav>
+
+      {/* ── User profile footer ── */}
+      <div
+        className="shrink-0 p-3 space-y-2"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
+      >
+        {/* User card (hidden when collapsed) */}
         {!isCollapsed && (
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-white/5 text-left flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xs font-bold">
+          <div
+            className="flex items-center gap-2.5 p-2.5 rounded-xl"
+            style={{ background: 'rgba(23,31,51,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+              style={{ background: `${accent}25`, color: accent, fontFamily: 'Sora, sans-serif' }}
+            >
               {user.username.slice(0, 2).toUpperCase()}
             </div>
-            <div className="flex-1 truncate">
-              <p className="text-xs font-bold text-white truncate">{user.full_name}</p>
-              <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
-                <ShieldCheck className="w-3 h-3" />
-                <span>{user.role}</span>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-xs font-semibold text-[#E8EDF9] truncate">{user.full_name}</p>
+              <div className="flex items-center gap-1 mt-0.5">
+                <ShieldCheck className="w-3 h-3 text-[#42D6A4] shrink-0" />
+                <span className="text-[10px] text-[#42D6A4]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  {user.role}
+                </span>
               </div>
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-1.5">
+        {/* Actions */}
+        <div className={clsx('flex gap-1.5', isCollapsed ? 'flex-col items-center' : 'flex-row')}>
           <button
             onClick={onReturnHub}
-            className="flex-1 py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            title="Return to Hub Doorway"
+            title="Return to Vaayil Hub"
+            aria-label="Return to Vaayil Hub"
+            className={clsx(
+              'flex items-center justify-center gap-1.5 rounded-xl transition-colors cursor-pointer border text-xs font-medium',
+              isCollapsed ? 'w-10 h-10 p-0' : 'flex-1 py-2 px-2.5',
+            )}
+            style={{
+              background: 'rgba(23,31,51,0.7)',
+              borderColor: 'rgba(255,255,255,0.10)',
+              color: '#9AA7BE',
+            }}
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
             {!isCollapsed && <span>Hub</span>}
           </button>
 
           <button
             onClick={onLogout}
-            className="p-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 transition-colors cursor-pointer"
-            title="Log Out"
+            title="Log out"
+            aria-label="Log out"
+            className={clsx(
+              'flex items-center justify-center rounded-xl transition-colors cursor-pointer border',
+              isCollapsed ? 'w-10 h-10 p-0' : 'w-10 h-9',
+            )}
+            style={{
+              background: 'rgba(255,100,124,0.10)',
+              borderColor: 'rgba(255,100,124,0.25)',
+              color: '#FF647C',
+            }}
           >
             <LogOut className="w-3.5 h-3.5" />
           </button>
@@ -229,4 +271,3 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
-

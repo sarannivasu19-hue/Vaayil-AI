@@ -13,11 +13,11 @@ interface SectorLoginCardProps {
 
 const DEMO_CREDENTIALS_MAP: Record<string, { username: string; label: string }> = {
   panchayat_health: { username: 'panchayat_admin', label: 'Selvi Anitha (Village Nurse)' },
-  clinic: { username: 'clinic_admin', label: 'Dr. Karthik Sundaram (Clinic)' },
-  vet_clinic: { username: 'vet_admin', label: 'Dr. Murugan Velu (Veterinary)' },
-  hotel_lodge: { username: 'hotel_admin', label: 'R. Senthil Nathan (Front Desk)' },
-  restaurant: { username: 'restaurant_admin', label: 'Chef Sundaram (Bhavan)' },
-  coaching: { username: 'coaching_admin', label: 'Prof. Vigneshwaran (Academy)' },
+  clinic:           { username: 'clinic_admin',    label: 'Dr. Karthik Sundaram (Clinic)' },
+  vet_clinic:       { username: 'vet_admin',        label: 'Dr. Murugan Velu (Veterinary)' },
+  hotel_lodge:      { username: 'hotel_admin',      label: 'R. Senthil Nathan (Front Desk)' },
+  restaurant:       { username: 'restaurant_admin', label: 'Chef Sundaram (Bhavan)' },
+  coaching:         { username: 'coaching_admin',   label: 'Prof. Vigneshwaran (Academy)' },
 };
 
 export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
@@ -26,215 +26,182 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
   onLoginSuccess,
 }) => {
   const { login } = useAuth();
-  const demoAccount = DEMO_CREDENTIALS_MAP[sector.id] || { username: 'panchayat_admin', label: 'Admin' };
+  const demo = DEMO_CREDENTIALS_MAP[sector.id] || { username: 'panchayat_admin', label: 'Admin' };
 
-  const [username, setUsername] = useState(demoAccount.username);
+  const [username, setUsername] = useState(demo.username);
   const [password, setPassword] = useState('vaayil123');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doLogin = async (u: string, p: string) => {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
-      await login(username, password);
+      await login(u, p);
       onLoginSuccess();
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setErrorMessage(err.message);
-      } else {
-        setErrorMessage('Authentication failed');
-      }
+      setErrorMessage(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleInstantDemoLogin = async () => {
-    setUsername(demoAccount.username);
-    setPassword('vaayil123');
-    setIsSubmitting(true);
-    setErrorMessage(null);
-    try {
-      await login(demoAccount.username, 'vaayil123');
-      onLoginSuccess();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setErrorMessage(err.message);
-      } else {
-        setErrorMessage('Demo login failed');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); doLogin(username, password); };
+  const handleDemoLogin = () => { setUsername(demo.username); setPassword('vaayil123'); doLogin(demo.username, 'vaayil123'); };
+
+  const accent = sector.accent_color;
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.92, y: 15 }}
+      initial={{ opacity: 0, scale: 0.93, y: 14 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.92, y: 15 }}
-      transition={{ duration: 0.28, ease: 'easeOut' }}
-      className="w-full max-w-md mx-auto p-6 sm:p-7 rounded-3xl glass-panel-glow relative z-20 text-left"
+      exit={{ opacity: 0, scale: 0.93, y: 14 }}
+      transition={{ duration: 0.26, ease: 'easeOut' }}
+      className="w-full max-w-sm mx-auto rounded-2xl overflow-hidden shadow-2xl"
       style={{
-        boxShadow: `0 0 50px ${sector.accent_color}25, 0 25px 50px rgba(0,0,0,0.7)`,
+        background: '#101626',
+        border: `1px solid ${accent}30`,
+        boxShadow: `0 0 60px ${accent}18, 0 25px 60px rgba(0,0,0,0.75)`,
       }}
     >
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors mb-5 group cursor-pointer"
-      >
-        <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
-        <span>Back to Vaayil Hub</span>
-      </button>
+      {/* Top colour band */}
+      <div
+        className="h-1.5 w-full"
+        style={{ background: `linear-gradient(90deg, ${accent}, #8065FF)` }}
+      />
 
-      {/* Sector Header Banner */}
-      <div className="flex items-start gap-4 mb-5">
+      <div className="p-6">
+        {/* Back button */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-xs font-medium text-[#9AA7BE] hover:text-[#E8EDF9] transition-colors mb-5 cursor-pointer border-none bg-transparent group"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+          Back to Vaayil Hub
+        </button>
+
+        {/* Sector header */}
+        <div className="flex items-center gap-3.5 mb-5">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
+            style={{ background: `${accent}18`, borderColor: `${accent}40`, color: accent }}
+          >
+            <DynamicIcon name={sector.icon} className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-[#E8EDF9] font-tamil leading-tight">
+              {sector.display_name_ta}
+            </h2>
+            <p className="text-xs text-[#9AA7BE]">{sector.display_name_en}</p>
+          </div>
+        </div>
+
+        {/* Tagline */}
+        <p className="text-xs text-[#9AA7BE] leading-relaxed mb-5 font-tamil p-3 rounded-xl" style={{ background: 'rgba(8,11,24,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          {sector.tagline_ta}
+        </p>
+
+        {/* Demo login */}
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border shadow-lg"
-          style={{
-            backgroundColor: `${sector.accent_color}20`,
-            borderColor: `${sector.accent_color}50`,
-            color: sector.accent_color,
-          }}
+          className="mb-5 p-3.5 rounded-xl flex items-center justify-between gap-3"
+          style={{ background: 'rgba(50,216,232,0.06)', border: '1px solid rgba(50,216,232,0.20)' }}
         >
-          <DynamicIcon name={sector.icon} className="w-7 h-7" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full border"
-              style={{
-                color: sector.accent_color,
-                borderColor: `${sector.accent_color}40`,
-                backgroundColor: `${sector.accent_color}15`,
-              }}
-            >
-              Workspace
-            </span>
-          </div>
-          <h2 className="text-xl font-bold text-white tracking-tight truncate font-tamil">
-            {sector.display_name_ta}
-          </h2>
-          <p className="text-xs text-slate-300 font-medium truncate">
-            {sector.display_name_en}
-          </p>
-        </div>
-      </div>
-
-      <p className="text-xs text-slate-400 mb-5 leading-relaxed font-tamil bg-slate-950/40 p-3 rounded-xl border border-white/5">
-        {sector.tagline_ta}
-      </p>
-
-      {/* 1-Click Fast Demo Sign-In Card */}
-      <div className="mb-5 p-3.5 rounded-xl bg-slate-900/90 border border-cyan-500/30 flex items-center justify-between gap-3 shadow-inner">
-        <div className="text-left">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-400">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Instant Demo Account</span>
-          </div>
-          <p className="text-[11px] text-slate-300 font-mono mt-0.5">
-            {demoAccount.username} <span className="text-slate-500">•</span> {demoAccount.label}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={handleInstantDemoLogin}
-          disabled={isSubmitting}
-          className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 active:scale-95 text-slate-950 text-xs font-bold transition-all shadow-md flex items-center gap-1 cursor-pointer disabled:opacity-50"
-        >
-          {isSubmitting ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <>
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>1-Click Enter</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      <div className="relative flex py-2 items-center mb-4">
-        <div className="flex-grow border-t border-white/10"></div>
-        <span className="flex-shrink mx-3 text-[11px] uppercase tracking-wider text-slate-500 font-mono">
-          Or Enter Credentials
-        </span>
-        <div className="flex-grow border-t border-white/10"></div>
-      </div>
-
-      {/* Error alert */}
-      {errorMessage && (
-        <motion.div
-          initial={{ opacity: 0, y: -5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-3 rounded-xl bg-rose-950/50 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2"
-        >
-          <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-          <span>{errorMessage}</span>
-        </motion.div>
-      )}
-
-      {/* Manual Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-3.5">
-        <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-            Username
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <UserIcon className="w-4 h-4" />
+          <div>
+            <div className="flex items-center gap-1.5 mb-1">
+              <Sparkles className="w-3 h-3 text-[#32D8E8]" />
+              <span className="text-xs font-semibold text-[#32D8E8]">Demo Account</span>
             </div>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-950/60 border border-white/10 text-white text-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
-              placeholder="e.g. panchayat_admin"
-            />
+            <p className="text-[11px] text-[#9AA7BE]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+              {demo.username} · {demo.label}
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={handleDemoLogin}
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all border-none disabled:opacity-50 shrink-0"
+            style={{ background: '#32D8E8', color: '#080B18' }}
+          >
+            {isSubmitting
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <><CheckCircle2 className="w-3.5 h-3.5" /><span>Enter</span></>
+            }
+          </button>
         </div>
 
-        <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-            Password
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Lock className="w-4 h-4" />
+        {/* Divider */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+          <span className="text-[10px] text-[#4A5568] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace' }}>or sign in</span>
+          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+        </div>
+
+        {/* Error */}
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 rounded-xl flex items-center gap-2 text-xs"
+            style={{ background: 'rgba(255,100,124,0.10)', border: '1px solid rgba(255,100,124,0.30)', color: '#FF647C' }}
+          >
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </motion.div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#9AA7BE] mb-1.5">
+              Username
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#9AA7BE] pointer-events-none">
+                <UserIcon className="w-4 h-4" />
+              </span>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="input-base pl-10"
+                placeholder="e.g. panchayat_admin"
+              />
             </div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-950/60 border border-white/10 text-white text-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
-              placeholder="••••••••"
-            />
           </div>
-        </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full py-3 px-4 rounded-xl font-bold text-sm text-slate-950 transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer mt-2 disabled:opacity-60"
-          style={{
-            backgroundColor: sector.accent_color,
-            boxShadow: `0 0 25px ${sector.accent_color}40`,
-          }}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Verifying & Loading Workspace...</span>
-            </>
-          ) : (
-            <span>Sign In to {sector.name}</span>
-          )}
-        </button>
-      </form>
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#9AA7BE] mb-1.5">
+              Password
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#9AA7BE] pointer-events-none">
+                <Lock className="w-4 h-4" />
+              </span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="input-base pl-10"
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer border-none disabled:opacity-60 transition-opacity mt-1"
+            style={{ background: accent, color: '#fff', boxShadow: `0 0 20px ${accent}35` }}
+          >
+            {isSubmitting
+              ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Verifying…</span></>
+              : <span>Sign in to {sector.name}</span>
+            }
+          </button>
+        </form>
+      </div>
     </motion.div>
   );
 };

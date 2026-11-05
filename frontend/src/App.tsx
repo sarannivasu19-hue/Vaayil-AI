@@ -8,7 +8,84 @@ import { VaayilHub3D } from './components/hub/VaayilHub3D';
 import { VaayilHub2D } from './components/hub/VaayilHub2D';
 import { SectorLoginCard } from './components/hub/SectorLoginCard';
 import { WorkspaceShell } from './components/layout/WorkspaceShell';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+
+/* ── Loading screen ── */
+const LoadingScreen: React.FC = () => (
+  <div
+    className="min-h-screen flex flex-col items-center justify-center gap-5"
+    style={{ background: '#080B18' }}
+  >
+    <div className="relative">
+      {/* Arch pulse */}
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" className="animate-pulse-glow">
+        <rect width="64" height="64" rx="18" fill="url(#lg-load)" />
+        <path
+          d="M14 50V29C14 19.611 22.059 12 32 12C41.941 12 50 19.611 50 29V50"
+          stroke="#A58EFF"
+          strokeWidth="3"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <circle cx="32" cy="31" r="4" fill="#32D8E8" opacity="0.9" />
+        <defs>
+          <linearGradient id="lg-load" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#17152D"/>
+            <stop offset="1" stopColor="#101626"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      {/* Rotating ring */}
+      <div
+        className="absolute inset-0 rounded-[18px] border-2 border-transparent animate-spin"
+        style={{
+          borderTopColor: '#8065FF',
+          borderRightColor: 'transparent',
+          animationDuration: '1.4s',
+        }}
+      />
+    </div>
+
+    <div className="text-center space-y-1.5">
+      <h1
+        className="text-2xl font-bold text-[#E8EDF9] tracking-wide"
+        style={{ fontFamily: 'Sora, sans-serif' }}
+      >
+        VAAYIL AI
+      </h1>
+      <p className="text-sm text-[#9AA7BE] font-tamil">வாயில் AI தொடங்குகிறது…</p>
+      <p className="text-xs text-[#4A5568]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+        Connecting to backend &amp; sector nodes
+      </p>
+    </div>
+  </div>
+);
+
+/* ── Error screen ── */
+const ErrorScreen: React.FC<{ error: string }> = ({ error }) => (
+  <div
+    className="min-h-screen flex flex-col items-center justify-center px-4"
+    style={{ background: '#080B18' }}
+  >
+    <div
+      className="w-full max-w-sm p-6 rounded-2xl text-center"
+      style={{ background: '#101626', border: '1px solid rgba(255,100,124,0.30)' }}
+    >
+      <AlertCircle className="w-10 h-10 mx-auto mb-4 text-[#FF647C]" />
+      <h2 className="text-base font-semibold text-[#E8EDF9] mb-2 font-heading">
+        Backend Connection Error
+      </h2>
+      <p className="text-xs text-[#FF647C] mb-5 leading-relaxed break-words">{error}</p>
+      <button
+        onClick={() => window.location.reload()}
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer border-none"
+        style={{ background: '#8065FF', color: '#fff' }}
+      >
+        Retry Connection
+      </button>
+    </div>
+  </div>
+);
 
 export const App: React.FC = () => {
   const { user, activeSector, logout, isLoading: authLoading } = useAuth();
@@ -18,7 +95,6 @@ export const App: React.FC = () => {
   const [loadingSectors, setLoadingSectors] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Fetch registered sectors from backend
   useEffect(() => {
     async function loadSectors() {
       try {
@@ -26,11 +102,7 @@ export const App: React.FC = () => {
         const data = await api.getSectors();
         setSectors(data);
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          setFetchError(err.message);
-        } else {
-          setFetchError('Failed to load sectors');
-        }
+        setFetchError(err instanceof Error ? err.message : 'Failed to load sectors');
       } finally {
         setLoadingSectors(false);
       }
@@ -38,50 +110,19 @@ export const App: React.FC = () => {
     loadSectors();
   }, []);
 
-  // Check prefers-reduced-motion
+  /* Respect reduced motion */
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (mediaQuery.matches) {
-      setIs3DMode(false);
-    }
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mq.matches) setIs3DMode(false);
+    const handler = (e: MediaQueryListEvent) => { if (e.matches) setIs3DMode(false); };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
-  if (authLoading || loadingSectors) {
-    return (
-      <div className="min-h-screen bg-[#070b14] flex flex-col items-center justify-center text-white">
-        <div className="relative mb-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-extrabold text-2xl font-tamil text-slate-950 shadow-xl shadow-cyan-500/30 animate-pulse">
-            வா
-          </div>
-          <Loader2 className="w-6 h-6 text-cyan-400 animate-spin absolute -bottom-2 -right-2" />
-        </div>
-        <p className="text-sm font-semibold text-slate-300 font-tamil">
-          வாயில் AI தொடங்குதல்...
-        </p>
-        <span className="text-xs text-slate-500 mt-1">Connecting to Vaayil backend & sector nodes</span>
-      </div>
-    );
-  }
+  if (authLoading || loadingSectors) return <LoadingScreen />;
+  if (fetchError) return <ErrorScreen error={fetchError} />;
 
-  if (fetchError) {
-    return (
-      <div className="min-h-screen bg-[#070b14] flex flex-col items-center justify-center text-white px-4">
-        <div className="p-6 rounded-2xl bg-rose-950/40 border border-rose-500/30 max-w-md text-center">
-          <AlertCircle className="w-10 h-10 text-rose-400 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-white mb-2">Backend Connection Error</h2>
-          <p className="text-xs text-rose-300 mb-4">{fetchError}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-bold transition-all cursor-pointer"
-          >
-            Retry Connection
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is authenticated, render the dedicated Sector Workspace
+  /* Authenticated workspace */
   if (user && activeSector) {
     return (
       <WorkspaceShell
@@ -93,20 +134,21 @@ export const App: React.FC = () => {
     );
   }
 
-  // Unauthenticated Vaayil Hub Experience
+  /* Unauthenticated — Hub */
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 relative overflow-hidden flex flex-col select-none">
-      {/* Top Navbar */}
+    <div
+      className="min-h-screen relative overflow-hidden flex flex-col select-none"
+      style={{ background: '#080B18', color: '#E8EDF9' }}
+    >
       <Navbar
         is3DMode={is3DMode}
         setIs3DMode={setIs3DMode}
         onReturnHub={() => setSelectedSector(null)}
       />
 
-      {/* Main Content Area */}
       <main className="flex-1 relative flex items-center justify-center w-full min-h-screen pt-14">
         <div className="w-full h-full min-h-[calc(100vh-3.5rem)] flex items-center justify-center relative">
-          {/* 3D Hub View */}
+
           {is3DMode ? (
             <div className="absolute inset-0 w-full h-full">
               <VaayilHub3D
@@ -116,7 +158,6 @@ export const App: React.FC = () => {
               />
             </div>
           ) : (
-            // 2D Card Carousel Fallback
             <div className="w-full py-8">
               <VaayilHub2D
                 sectors={sectors}
@@ -126,10 +167,10 @@ export const App: React.FC = () => {
             </div>
           )}
 
-          {/* Overlay Login Card (Modal/Overlay when a sector is clicked) */}
+          {/* Login card overlay */}
           <AnimatePresence>
             {selectedSector && (
-              <div className="fixed inset-0 z-30 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+              <div className="fixed inset-0 z-30 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                 <SectorLoginCard
                   sector={selectedSector}
                   onBack={() => setSelectedSector(null)}
@@ -139,19 +180,26 @@ export const App: React.FC = () => {
             )}
           </AnimatePresence>
 
-          {/* Bottom Hub Hint when in 3D mode without selection */}
+          {/* Hub hint */}
           {is3DMode && !selectedSector && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.6 }}
               className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-none z-10"
             >
-              <div className="px-4 py-2 rounded-full glass-panel border border-cyan-500/25 text-xs text-slate-300 flex items-center gap-2 shadow-2xl backdrop-blur-xl">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+              <div
+                className="px-4 py-2 rounded-full text-xs flex items-center gap-2.5 shadow-xl backdrop-blur-xl"
+                style={{
+                  background: 'rgba(16,22,38,0.75)',
+                  border: '1px solid rgba(50,216,232,0.20)',
+                  color: '#9AA7BE',
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#32D8E8] animate-ping" />
                 <span className="font-tamil">துறையை தேர்வு செய்ய கிளிக் செய்யவும்</span>
-                <span className="text-slate-500">•</span>
-                <span className="text-slate-400">Click any sector node to sign in</span>
+                <span style={{ color: '#4A5568' }}>•</span>
+                <span>Click any sector to sign in</span>
               </div>
             </motion.div>
           )}
