@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Card } from '../ui/Card';
-import { SectorWorld2D } from '../world/SectorWorld2D';
+import { SectorBackground } from '../world/SectorBackground';
 
 interface LanguageOption {
   value: LanguageMode;
@@ -364,8 +364,8 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
 
       {/* ── 3-Column layout (desktop) | stacked (mobile) ── */}
       <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-0 relative">
-        {/* Sector World 2D Ambient Backdrop */}
-        <SectorWorld2D sectorId={sectorDetail.id} mode="ambient" className="z-0" />
+        {/* Sector Ambient Backdrop */}
+        <SectorBackground sectorId={sectorDetail.id} mode="ambient" className="z-0" />
 
         {/* ─── LEFT: Call info + controls ─── */}
         <div

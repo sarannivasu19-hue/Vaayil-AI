@@ -47,7 +47,7 @@ export const VaayilHub2D: React.FC<VaayilHub2DProps> = ({
 
         <h1
           className="text-3xl sm:text-4xl font-bold text-[#E8EDF9] tracking-tight mb-2"
-          style={{ fontFamily: 'Sora, sans-serif' }}
+          style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
         >
           VAAYIL AI
         </h1>
@@ -109,7 +109,7 @@ export const VaayilHub2D: React.FC<VaayilHub2DProps> = ({
                 {/* Name */}
                 <h3
                   className="text-base font-semibold text-[#E8EDF9] mb-0.5 font-tamil"
-                  style={{ fontFamily: 'Sora, sans-serif' }}
+                  style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
                 >
                   {sector.display_name_ta}
                 </h3>

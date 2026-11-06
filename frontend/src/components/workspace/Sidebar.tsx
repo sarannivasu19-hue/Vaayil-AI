@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex flex-col leading-none overflow-hidden">
               <span
                 className="text-xs font-bold tracking-widest text-[#E8EDF9] truncate"
-                style={{ fontFamily: 'Sora, sans-serif' }}
+                style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
               >
                 VAAYIL AI
               </span>
@@ -225,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
-              style={{ background: `${accent}25`, color: accent, fontFamily: 'Sora, sans-serif' }}
+              style={{ background: `${accent}25`, color: accent, fontFamily: 'Plus Jakarta Sans, sans-serif' }}
             >
               {user.username.slice(0, 2).toUpperCase()}
             </div>

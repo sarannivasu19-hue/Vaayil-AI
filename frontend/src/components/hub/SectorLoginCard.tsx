@@ -61,9 +61,9 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
       transition={{ duration: 0.26, ease: 'easeOut' }}
       className="w-full max-w-sm mx-auto rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl"
       style={{
-        background: theme.surface,
+        background: theme.surfaceTint,
         border: `1px solid ${theme.borderHighlight}`,
-        boxShadow: `0 0 60px ${theme.glow}, 0 25px 60px rgba(0,0,0,0.85)`,
+        boxShadow: `0 0 50px ${theme.glow}, 0 24px 60px rgba(0,0,0,0.85)`,
       }}
     >
       {/* Top colour band */}

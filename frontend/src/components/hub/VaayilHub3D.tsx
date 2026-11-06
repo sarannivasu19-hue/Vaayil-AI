@@ -112,7 +112,7 @@ export const VaayilHub3D: React.FC<VaayilHub3DProps> = ({
           scale={18}
           size={1.8}
           speed={0.25}
-          color={theme.particles[0] || '#32D8E8'}
+          color={theme.accent || '#32D8E8'}
           opacity={0.55}
         />
         <Sparkles
@@ -120,7 +120,7 @@ export const VaayilHub3D: React.FC<VaayilHub3DProps> = ({
           scale={14}
           size={1.4}
           speed={0.18}
-          color={theme.particles[1] || '#A58EFF'}
+          color={theme.accentSecondary || '#A58EFF'}
           opacity={0.4}
         />
 

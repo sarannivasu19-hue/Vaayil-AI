@@ -8,7 +8,7 @@ import { VaayilHub3D } from './components/hub/VaayilHub3D';
 import { VaayilHub2D } from './components/hub/VaayilHub2D';
 import { SectorLoginCard } from './components/hub/SectorLoginCard';
 import { WorkspaceShell } from './components/layout/WorkspaceShell';
-import { SectorWorld2D } from './components/world/SectorWorld2D';
+import { SectorBackground } from './components/world/SectorBackground';
 import { SectorTransitionIntro } from './components/world/SectorTransitionIntro';
 import { getSectorTheme } from './config/sectorThemes';
 import { AlertCircle } from 'lucide-react';
@@ -51,8 +51,8 @@ const LoadingScreen: React.FC = () => (
 
     <div className="text-center space-y-1.5">
       <h1
-        className="text-2xl font-bold text-[#E8EDF9] tracking-wide"
-        style={{ fontFamily: 'Sora, sans-serif' }}
+        className="text-2xl font-bold text-[#E8EDF9] tracking-tight"
+        style={{ fontFamily: 'Plus Jakarta Sans, Inter, sans-serif' }}
       >
         VAAYIL AI
       </h1>
@@ -213,10 +213,10 @@ export const App: React.FC = () => {
           <AnimatePresence>
             {selectedSector && !showIntro && (
               <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
-                {/* Immersive 2D Sector World Backdrop */}
-                <SectorWorld2D sectorId={selectedSector.id} mode="full" />
+                {/* Immersive Photographic & Gradient Sector Background */}
+                <SectorBackground sectorId={selectedSector.id} mode="immersive" />
 
-                {/* Subtle dark vignette backdrop */}
+                {/* Frosted panel overlay for login card */}
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-none" />
 
                 {/* Sector Login Card centered on top */}

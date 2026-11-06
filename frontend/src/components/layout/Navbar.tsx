@@ -55,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({ is3DMode, setIs3DMode, onReturnH
           <div className="flex flex-col text-left leading-none">
             <span
               className="text-sm font-bold tracking-wide text-[#E8EDF9] group-hover:text-[#A58EFF] transition-colors duration-200"
-              style={{ fontFamily: 'Sora, sans-serif' }}
+              style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
             >
               VAAYIL AI
             </span>

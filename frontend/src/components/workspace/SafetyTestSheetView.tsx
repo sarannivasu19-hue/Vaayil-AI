@@ -66,7 +66,7 @@ export const SafetyTestSheetView: React.FC<SafetyTestSheetViewProps> = ({ sector
             <span className="p-1.5 rounded-lg bg-rose-950/80 border border-rose-500/30 text-rose-400">
               <ShieldAlert className="w-5 h-5" />
             </span>
-            <h1 className="text-xl sm:text-2xl font-bold text-white font-sora">
+            <h1 className="text-xl sm:text-2xl font-bold text-white font-heading">
               Safety Test Sheet
             </h1>
           </div>

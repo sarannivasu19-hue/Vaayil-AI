@@ -12,7 +12,7 @@ import { NoiseLabView } from '../workspace/NoiseLabView';
 import { SafetyTestSheetView } from '../workspace/SafetyTestSheetView';
 import { UrgentAlertsView } from '../workspace/UrgentAlertsView';
 import { getSectorTheme, getSectorCssVariables } from '../../config/sectorThemes';
-import { SectorWorld2D } from '../world/SectorWorld2D';
+import { SectorBackground } from '../world/SectorBackground';
 import { DynamicIcon } from '../ui/Icons';
 import { Loader2, LogOut, ArrowLeft, Search, Globe } from 'lucide-react';
 
@@ -110,9 +110,9 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
       {/* Main content column */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
 
-        {/* Ambient subtle sector world pattern for non-live-call pages */}
+        {/* Ambient subtle sector background for non-live-call pages */}
         {!isFullWidth && (
-          <SectorWorld2D
+          <SectorBackground
             sectorId={sectorDetail.id}
             mode="subtle"
             className="z-0"
@@ -193,7 +193,7 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
               >
                 <div
                   className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-bold shrink-0"
-                  style={{ background: `${accent}25`, color: accent, fontFamily: 'Sora, sans-serif' }}
+                  style={{ background: `${accent}25`, color: accent, fontFamily: 'Plus Jakarta Sans, sans-serif' }}
                 >
                   {user.username.slice(0, 2).toUpperCase()}
                 </div>

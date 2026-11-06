@@ -274,7 +274,7 @@ export const NoiseLabView: React.FC<NoiseLabViewProps> = ({ sectorDetail }) => {
             <span className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
               <Volume2 className="w-5 h-5" />
             </span>
-            <h1 className="text-xl sm:text-2xl font-bold text-white font-sora">
+            <h1 className="text-xl sm:text-2xl font-bold text-white font-heading">
               Vaayil Noise Lab
             </h1>
           </div>
@@ -482,7 +482,7 @@ export const NoiseLabView: React.FC<NoiseLabViewProps> = ({ sectorDetail }) => {
             type="button"
             onClick={handleRunExperiment}
             disabled={running || !audioBlob}
-            className="w-full py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xl cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed touch-target text-slate-950 font-sora"
+            className="w-full py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xl cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed touch-target text-slate-950 font-heading"
             style={{ backgroundColor: sectorDetail.accent_color }}
           >
             {running ? (
