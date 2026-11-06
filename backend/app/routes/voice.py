@@ -21,6 +21,9 @@ clearly instead of silently failing.
 import io
 import logging
 import os
+import shutil
+import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -128,39 +131,97 @@ class TranscribeResponse(BaseModel):
 # Audio conversion helper
 # ---------------------------------------------------------------------------
 
+def get_ffmpeg_path() -> str | None:
+    """
+    Find ffmpeg executable on PATH, via imageio-ffmpeg, or in Python virtualenv Scripts.
+    """
+    found = shutil.which("ffmpeg")
+    if found:
+        return found
+
+    try:
+        import imageio_ffmpeg
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+        if exe and os.path.isfile(exe):
+            return exe
+    except Exception:
+        pass
+
+    candidates = [
+        os.path.join(sys.prefix, "Scripts", "ffmpeg.exe"),
+        os.path.join(sys.prefix, "bin", "ffmpeg"),
+        os.path.join(os.path.dirname(sys.executable), "ffmpeg.exe"),
+        os.path.join(os.path.dirname(sys.executable), "ffmpeg"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+
+    return None
+
+
 def convert_webm_to_wav(input_path: str, output_path: str) -> None:
     """
-    Convert a WebM/Opus file (from browser MediaRecorder) to WAV using pydub.
-    pydub delegates to ffmpeg. If ffmpeg is not installed, raises RuntimeError
-    with a clear message instead of silently failing.
+    Convert a WebM/Opus file (from browser MediaRecorder) to WAV (16kHz mono).
+    Attempts direct conversion via ffmpeg first, and falls back to pydub if needed.
 
     Why: Gnani Prisma v3.0 accepts WAV/MP3/OGG/FLAC/AAC/M4A — NOT WebM.
     Browser MediaRecorder defaults to audio/webm;codecs=opus on Chrome/Edge
     and audio/ogg;codecs=opus on Firefox. Firefox OGG is accepted directly;
     Chrome/Edge WebM must be converted.
     """
+    ffmpeg_exe = get_ffmpeg_path()
+
+    # If ffmpeg binary found, execute direct conversion (fast, robust, no ffprobe dependency)
+    if ffmpeg_exe:
+        try:
+            cmd = [
+                ffmpeg_exe,
+                "-y",
+                "-i", input_path,
+                "-vn",
+                "-ac", "1",
+                "-ar", "16000",
+                output_path,
+            ]
+            proc = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            if proc.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                logger.info(
+                    "WebM→WAV conversion via ffmpeg: %s → %s (size: %d bytes)",
+                    input_path, output_path, os.path.getsize(output_path)
+                )
+                return
+            stderr_msg = proc.stderr.decode("utf-8", errors="replace")
+            logger.warning(
+                "Direct ffmpeg command returned code %d: %s. Trying pydub fallback...",
+                proc.returncode, stderr_msg[-200:]
+            )
+        except Exception as exc:
+            logger.warning("Direct ffmpeg execution failed: %s. Trying pydub fallback...", exc)
+
+    # Fallback via pydub
     try:
         from pydub import AudioSegment
-    except ImportError:
-        raise RuntimeError(
-            "pydub is not installed. Run: pip install pydub. "
-            "Also install ffmpeg: https://ffmpeg.org/download.html"
-        )
-
-    try:
+        if ffmpeg_exe:
+            AudioSegment.converter = ffmpeg_exe
         audio = AudioSegment.from_file(input_path, format="webm")
+        audio = audio.set_channels(1).set_frame_rate(16000)
         audio.export(output_path, format="wav")
         logger.info(
-            "WebM→WAV conversion: %s → %s (%.2f s)",
+            "WebM→WAV conversion via pydub: %s → %s (%.2f s)",
             input_path, output_path, len(audio) / 1000
         )
+        return
     except Exception as exc:
-        # pydub wraps ffmpeg errors; surface them clearly
-        if "ffmpeg" in str(exc).lower() or "avconv" in str(exc).lower():
+        if ffmpeg_exe is None:
             raise RuntimeError(
                 "ffmpeg is required for WebM→WAV conversion but was not found. "
-                "Install it from https://ffmpeg.org/download.html and ensure "
-                "it is on your system PATH. Then restart the backend server."
+                "Install it from https://ffmpeg.org/download.html or pip install imageio-ffmpeg."
             )
         raise RuntimeError(f"Audio conversion failed: {exc}") from exc
 
