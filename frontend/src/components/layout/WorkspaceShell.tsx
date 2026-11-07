@@ -200,19 +200,20 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
               <span className="font-tamil hidden md:block">தமிழ் / EN</span>
             </button>
 
-            {/* Return to Hub */}
+            {/* Back button — goes to category step, does NOT logout */}
             {onReturnHub && (
               <button
                 onClick={onReturnHub}
                 className="flex items-center gap-1.5 h-8 px-3 rounded-lg transition-colors cursor-pointer border text-xs font-medium"
                 style={{ background: 'rgba(23,31,51,0.7)', borderColor: 'rgba(255,255,255,0.08)', color: '#9AA7BE' }}
+                title="Back to category selection (stays logged in)"
               >
                 <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">Hub</span>
+                <span className="hidden sm:inline">Back</span>
               </button>
             )}
 
-            {/* User chip + logout */}
+            {/* User chip + Exit button */}
             <div className="flex items-center gap-1.5">
               <div
                 className="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-lg border"
@@ -229,25 +230,27 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
                 </span>
               </div>
 
+              {/* Exit — clears session, browser Back cannot return to workspace */}
               <button
                 onClick={onLogout}
-                title="Log out"
-                aria-label="Log out"
-                className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors cursor-pointer border"
+                title="Exit & sign out (clears session)"
+                aria-label="Exit"
+                className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg transition-colors cursor-pointer border text-xs font-semibold"
                 style={{
                   background: 'rgba(255,100,124,0.10)',
                   borderColor: 'rgba(255,100,124,0.25)',
                   color: '#FF647C',
                 }}
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">Exit</span>
               </button>
             </div>
           </div>
         </header>
 
         {/* ── Page content ── */}
-        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+        <main className="flex-1 overflow-y-auto pb-16 md:pb-0 relative z-10">
           <div className={isFullWidth ? 'h-full' : 'max-w-6xl mx-auto px-4 sm:px-6 py-6'}>
             {activeTab === 'dashboard'      && <DashboardView      sectorDetail={sectorDetail} onNavigateTab={(tab) => setActiveTab(tab)} />}
             {activeTab === 'live-call'      && <LiveCallPage        sectorDetail={sectorDetail} />}
