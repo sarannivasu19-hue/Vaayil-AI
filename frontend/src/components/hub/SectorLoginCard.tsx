@@ -328,9 +328,10 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
                 type="button"
                 onClick={onBack}
                 className="inline-flex items-center gap-2 text-xs font-medium text-[#9AA7BE] hover:text-[#E8EDF9] transition-colors cursor-pointer border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg group"
+                title="Back to Business Selection"
               >
                 <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-                <span>Back to Vaayil Hub</span>
+                <span>Back</span>
               </button>
 
               <div className="flex items-center gap-1.5 text-[11px] text-[#42D6A4] font-medium font-mono">

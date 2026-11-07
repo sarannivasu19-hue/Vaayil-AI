@@ -75,7 +75,7 @@ export const BusinessSelector: React.FC<BusinessSelectorProps> = ({
             title="Back to Sector Categories"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Categories</span>
+            <span>Back</span>
           </button>
           {onBackToDistricts && (
             <button
