@@ -2,9 +2,9 @@ from app.sectors.base import SectorPackage, SlotDefinition, SlotPrompt, SampleBo
 
 PACKAGE = SectorPackage(
     id="clinic",
-    name="Arul Primary Care Clinic",
-    display_name_ta="அருள் குடும்ப நல மருத்துவமனை",
-    display_name_en="Arul Family Health Clinic",
+    name="Saran Clinic",
+    display_name_ta="சரண் குடும்ப நல மருத்துவமனை",
+    display_name_en="Saran Clinic",
     tagline_ta="மருத்துவர் சந்திப்பு முன்பதிவு மற்றும் அவசர கவனிப்பு",
     tagline_en="Doctor appointment bookings, token scheduling & urgent triage",
     description="Outpatient clinic automated reception for consultations, routine checkups, and emergency triage guidance.",
@@ -16,7 +16,7 @@ PACKAGE = SectorPackage(
     schedule_time_key="appointment_time",
     demo_user={
         "username": "clinic_admin",
-        "email": "appointments@arulclinic.com",
+        "email": "appointments@saranclinic.com",
         "full_name": "Dr. Karthik Sundaram (M.B.B.S.)",
         "role": "owner",
     },
@@ -28,9 +28,9 @@ PACKAGE = SectorPackage(
             type="text",
             required=True,
             prompts=SlotPrompt(
-                ta="வணக்கம், நோயாளியின் பெயரை கூறுங்கள்?",
-                tanglish="Vanakkam, patient peyar enna?",
-                en="Welcome to Arul Clinic. What is the patient's full name?"
+                ta="வணக்கம், சரண் கிளினிக். நோயாளியின் பெயரை கூறுங்கள்?",
+                tanglish="Vanakkam, Saran Clinic. Patient peyar enna?",
+                en="Welcome to Saran Clinic. What is the patient's full name?"
             ),
             description="Name of person seeking consultation"
         ),

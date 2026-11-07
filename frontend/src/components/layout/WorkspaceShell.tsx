@@ -14,11 +14,13 @@ import { UrgentAlertsView } from '../workspace/UrgentAlertsView';
 import { getSectorTheme, getSectorCssVariables } from '../../config/sectorThemes';
 import { SectorBackground } from '../world/SectorBackground';
 import { DynamicIcon } from '../ui/Icons';
-import { Loader2, LogOut, ArrowLeft, Search, Globe } from 'lucide-react';
+import { Loader2, LogOut, ArrowLeft, Search, Globe, MapPin } from 'lucide-react';
+import type { TNDistrict } from '../../data/tamilNaduDistricts';
 
 interface WorkspaceShellProps {
   sector: Sector;
   user: User;
+  district?: TNDistrict | null;
   onLogout: () => void;
   onReturnHub?: () => void;
 }
@@ -37,6 +39,7 @@ const TAB_LABELS: Record<WorkspaceTab, string> = {
 export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
   sector,
   user,
+  district,
   onLogout,
   onReturnHub,
 }) => {
@@ -128,8 +131,27 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
             backdropFilter: 'blur(16px)',
           }}
         >
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2.5 min-w-0">
+          {/* Breadcrumb with District, Sector & Business */}
+          <div className="flex items-center gap-2 min-w-0">
+            {district && (
+              <>
+                <div
+                  className="hidden md:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border"
+                  style={{
+                    background: 'rgba(50,216,232,0.08)',
+                    borderColor: 'rgba(50,216,232,0.25)',
+                    color: '#32D8E8',
+                  }}
+                  title={`Tamil Nadu District: ${district.en}`}
+                >
+                  <MapPin className="w-3 h-3 text-[#32D8E8]" />
+                  <span>{district.en}</span>
+                  <span className="font-tamil opacity-75 text-[11px]">({district.ta})</span>
+                </div>
+                <span className="text-xs text-[#4A5568] hidden md:block">/</span>
+              </>
+            )}
+
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border"
               style={{ background: theme.badgeBg, borderColor: theme.borderHighlight, color: theme.accent }}
@@ -137,10 +159,15 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
               <DynamicIcon name={sectorDetail.icon} className="w-4 h-4" />
             </div>
             <span
-              className="text-xs font-semibold hidden sm:block font-tamil truncate"
+              className="text-xs font-semibold hidden sm:block truncate"
               style={{ color: theme.accent }}
             >
-              {sectorDetail.display_name_ta}
+              {sectorDetail.display_name_en || sectorDetail.name}
+            </span>
+            <span
+              className="text-xs hidden lg:block font-tamil truncate text-slate-400"
+            >
+              ({sectorDetail.display_name_ta})
             </span>
             <span className="text-xs text-[#4A5568] hidden sm:block">/</span>
             <span className="text-xs font-semibold text-[#E8EDF9] truncate">

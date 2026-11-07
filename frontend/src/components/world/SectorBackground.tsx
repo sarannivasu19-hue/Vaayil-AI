@@ -61,10 +61,10 @@ export const SectorBackground: React.FC<SectorBackgroundProps> = ({
     };
   }, [theme.imagePath]);
 
-  // Mode-based opacity and blur settings
-  const imageOpacity = mode === 'immersive' ? 0.45 : mode === 'ambient' ? 0.22 : 0.12;
-  const imageBlur = mode === 'immersive' ? 'blur(0px)' : mode === 'ambient' ? 'blur(8px)' : 'blur(16px)';
-  const overlayOpacity = mode === 'immersive' ? 0.85 : mode === 'ambient' ? 0.90 : 0.94;
+  // Mode-based opacity and blur settings (balanced for visibility + WCAG AA contrast)
+  const imageOpacity = mode === 'immersive' ? 0.60 : mode === 'ambient' ? 0.35 : 0.25;
+  const imageBlur = mode === 'immersive' ? 'blur(0px)' : mode === 'ambient' ? 'blur(2px)' : 'blur(4px)';
+  const overlayOpacity = mode === 'immersive' ? 0.65 : mode === 'ambient' ? 0.78 : 0.84;
 
   return (
     <div

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -18,10 +18,12 @@ class Alert(Base):
     reason = Column(String(255), nullable=False)
     matched_keyword = Column(String(100), nullable=False)
     snippet = Column(Text, nullable=False)
-    status = Column(String(30), default="pending_review", nullable=False, index=True)
+    severity = Column(String(20), default="high", nullable=False)  # critical, high, medium
+    status = Column(String(30), default="new", nullable=False, index=True)  # new, under_review, confirmed, resolved, false_alarm
     reviewed_by = Column(String(100), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
     review_notes = Column(Text, nullable=True)
+    is_dev_sample = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     sector = relationship("Sector", back_populates="alerts")
@@ -29,7 +31,8 @@ class Alert(Base):
 
     __table_args__ = (
         Index("idx_alerts_sector_status", "sector_id", "status"),
+        Index("idx_alerts_created_at", "created_at"),
     )
 
     def __repr__(self) -> str:
-        return f"<Alert #{self.id} ({self.sector_id}) [{self.status}] {self.reason}>"
+        return f"<Alert #{self.id} ({self.sector_id}) [{self.severity}|{self.status}] {self.reason}>"

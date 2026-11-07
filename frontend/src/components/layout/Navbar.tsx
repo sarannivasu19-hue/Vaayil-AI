@@ -1,11 +1,23 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { CheckCircle2, AlertCircle, Box, Layers } from 'lucide-react';
+import {
+  CheckCircle2,
+  AlertCircle,
+  Box,
+  Layers,
+  Shield,
+  User as UserIcon,
+  Power,
+  Server,
+} from 'lucide-react';
 
 interface NavbarProps {
   is3DMode: boolean;
   setIs3DMode: (val: boolean) => void;
   onReturnHub?: () => void;
+  onOpenUserAuth?: () => void;
+  onOpenAdminLogin?: () => void;
+  onOpenAdminDashboard?: () => void;
 }
 
 /* Doorway arch SVG logo mark */
@@ -21,21 +33,28 @@ const VaayilLogo: React.FC<{ size?: number }> = ({ size = 36 }) => (
       fill="none"
     />
     {/* door columns */}
-    <line x1="9"  y1="27" x2="9"  y2="27" stroke="#E8EDF9" strokeWidth="2.2" strokeLinecap="round"/>
-    <line x1="27" y1="27" x2="27" y2="27" stroke="#E8EDF9" strokeWidth="2.2" strokeLinecap="round"/>
+    <line x1="9" y1="27" x2="9" y2="27" stroke="#E8EDF9" strokeWidth="2.2" strokeLinecap="round" />
+    <line x1="27" y1="27" x2="27" y2="27" stroke="#E8EDF9" strokeWidth="2.2" strokeLinecap="round" />
     {/* inner glow dot */}
     <circle cx="18" cy="18" r="2.5" fill="#32D8E8" opacity="0.9" />
     <defs>
       <linearGradient id="vg" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#17152D"/>
-        <stop offset="1" stopColor="#101626"/>
+        <stop stopColor="#17152D" />
+        <stop offset="1" stopColor="#101626" />
       </linearGradient>
     </defs>
   </svg>
 );
 
-export const Navbar: React.FC<NavbarProps> = ({ is3DMode, setIs3DMode, onReturnHub }) => {
-  const { user, health } = useAuth();
+export const Navbar: React.FC<NavbarProps> = ({
+  is3DMode,
+  setIs3DMode,
+  onReturnHub,
+  onOpenUserAuth,
+  onOpenAdminLogin,
+  onOpenAdminDashboard,
+}) => {
+  const { user, isAdmin, logout, health } = useAuth();
   const isHealthy = health?.status === 'healthy';
 
   return (
@@ -44,7 +63,6 @@ export const Navbar: React.FC<NavbarProps> = ({ is3DMode, setIs3DMode, onReturnH
       style={{ background: 'rgba(8,11,24,0.92)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
     >
       <div className="max-w-7xl w-full mx-auto flex items-center justify-between gap-4">
-
         {/* ── Brand ── */}
         <button
           onClick={onReturnHub}
@@ -67,10 +85,9 @@ export const Navbar: React.FC<NavbarProps> = ({ is3DMode, setIs3DMode, onReturnH
 
         {/* ── Right controls ── */}
         <div className="flex items-center gap-2 sm:gap-3">
-
           {/* Status badge */}
           <div
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs"
+            className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs"
             style={{
               background: 'rgba(16,22,38,0.8)',
               border: '1px solid rgba(255,255,255,0.08)',
@@ -81,10 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({ is3DMode, setIs3DMode, onReturnH
             ) : (
               <AlertCircle className="w-3 h-3 text-[#FFBF69] shrink-0" />
             )}
-            <span
-              className="text-[#9AA7BE]"
-              style={{ fontFamily: 'JetBrains Mono, monospace' }}
-            >
+            <span className="text-[#9AA7BE]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
               Gnani&nbsp;
               <span className={isHealthy ? 'text-[#42D6A4]' : 'text-[#FFBF69]'}>
                 {isHealthy ? 'Online' : 'Connecting'}
@@ -132,13 +146,82 @@ export const Navbar: React.FC<NavbarProps> = ({ is3DMode, setIs3DMode, onReturnH
             </div>
           )}
 
+          {/* Authentication Action Buttons */}
+          {!user ? (
+            <div className="flex items-center gap-2">
+              {/* User Login & Register button */}
+              <button
+                type="button"
+                onClick={onOpenUserAuth}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#32D8E8]/10 hover:bg-[#32D8E8]/20 text-[#32D8E8] border border-[#32D8E8]/30 transition-all cursor-pointer"
+              >
+                <UserIcon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">User Sign In / Register</span>
+                <span className="sm:hidden">Sign In</span>
+              </button>
+
+              {/* Admin Portal button */}
+              <button
+                type="button"
+                onClick={onOpenAdminLogin}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#8065FF]/15 hover:bg-[#8065FF]/25 text-[#A58EFF] border border-[#8065FF]/35 transition-all cursor-pointer"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Admin</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={onOpenAdminDashboard}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#8065FF]/20 text-[#A58EFF] border border-[#8065FF]/40 cursor-pointer"
+                >
+                  <Server className="w-3.5 h-3.5" />
+                  <span>Admin Hub</span>
+                </button>
+              ) : (
+                <span className="text-xs text-[#9AA7BE] font-mono hidden sm:inline">
+                  {user.full_name} ({user.role})
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={logout}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#FF647C] bg-[#FF647C]/10 border border-[#FF647C]/30 hover:bg-[#FF647C]/20 transition-all cursor-pointer"
+              >
+                <Power className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </div>
+          )}
+
           {/* Language hint chips */}
-          <div className="hidden md:flex items-center gap-1.5 text-[10px] text-[#9AA7BE]" style={{ fontFamily: 'Noto Sans Tamil, sans-serif' }}>
-            <span className="px-2 py-1 rounded-full" style={{ background: 'rgba(16,22,38,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>தமிழ்</span>
+          <div
+            className="hidden md:flex items-center gap-1.5 text-[10px] text-[#9AA7BE]"
+            style={{ fontFamily: 'Noto Sans Tamil, sans-serif' }}
+          >
+            <span
+              className="px-2 py-1 rounded-full"
+              style={{ background: 'rgba(16,22,38,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              தமிழ்
+            </span>
             <span className="text-[#4A5568]">|</span>
-            <span className="px-2 py-1 rounded-full" style={{ background: 'rgba(16,22,38,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>Tanglish</span>
+            <span
+              className="px-2 py-1 rounded-full"
+              style={{ background: 'rgba(16,22,38,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              Tanglish
+            </span>
             <span className="text-[#4A5568]">|</span>
-            <span className="px-2 py-1 rounded-full" style={{ background: 'rgba(16,22,38,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>English</span>
+            <span
+              className="px-2 py-1 rounded-full"
+              style={{ background: 'rgba(16,22,38,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              English
+            </span>
           </div>
         </div>
       </div>

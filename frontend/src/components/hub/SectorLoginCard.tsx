@@ -4,205 +4,576 @@ import type { Sector } from '../../types';
 import { getSectorTheme } from '../../config/sectorThemes';
 import { DynamicIcon } from '../ui/Icons';
 import { useAuth } from '../../context/AuthContext';
-import { ArrowLeft, Lock, User as UserIcon, Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Lock,
+  User as UserIcon,
+  Loader2,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Radio,
+  ShieldCheck,
+} from 'lucide-react';
 
 interface SectorLoginCardProps {
   sector: Sector;
   onBack: () => void;
   onLoginSuccess: () => void;
+  onOpenRegister?: () => void;
 }
 
-const DEMO_CREDENTIALS_MAP: Record<string, { username: string; label: string }> = {
-  panchayat_health: { username: 'panchayat_admin', label: 'Selvi Anitha (Village Nurse)' },
-  clinic:           { username: 'clinic_admin',    label: 'Dr. Karthik Sundaram (Clinic)' },
-  vet_clinic:       { username: 'vet_admin',        label: 'Dr. Murugan Velu (Veterinary)' },
-  hotel_lodge:      { username: 'hotel_admin',      label: 'R. Senthil Nathan (Front Desk)' },
-  restaurant:       { username: 'restaurant_admin', label: 'Chef Sundaram (Bhavan)' },
-  coaching:         { username: 'coaching_admin',   label: 'Prof. Vigneshwaran (Academy)' },
+interface SectorMeta {
+  role: string;
+  email: string;
+  username: string;
+  badgeEn: string;
+  badgeTa: string;
+  storyEn: string;
+  storyTa: string;
+  capabilities: string[];
+}
+
+const SECTOR_META: Record<string, SectorMeta> = {
+  panchayat_health: {
+    role: 'Selvi Anitha (Village Health Nurse)',
+    email: 'health.desk@panchayat.tn.gov.in',
+    username: 'panchayat_admin',
+    badgeEn: 'Panchayat Health Help Desk',
+    badgeTa: 'ஊராட்சி சுகாதார மையம்',
+    storyEn: 'Instant maternal-child triage, vaccination alert dispatch, and 24/7 bilingual voice response for rural citizens.',
+    storyTa: 'கிராமப்புற குடிமக்களுக்கான உடனடி தாய்-சேய் நல ஆலோசனை, தடுப்பூசி எச்சரிக்கைகள் மற்றும் 24/7 குரல் உதவி.',
+    capabilities: ['Maternal Triage', 'Polio & MMR Reminders', 'Tamil Voice Agent', 'Doctor Escalation'],
+  },
+  clinic: {
+    role: 'Dr. Karthik Sundaram (Clinic Admin)',
+    email: 'appointments@saranclinic.com',
+    username: 'clinic_admin',
+    badgeEn: 'Saran Clinic',
+    badgeTa: 'சரண் முதன்மை சிகிச்சை மையம்',
+    storyEn: 'Streamlined appointment scheduling, intelligent token triage, and emergency severity screening across outpatient desks.',
+    storyTa: 'முன்பதிவுகள், தானியங்கி டோக்கன் மேலாண்மை மற்றும் தீவிர அவசரநிலை கண்டறிதல் வசதி.',
+    capabilities: ['Smart Token Booking', 'Symptom Triage', 'Slot Conflict Guard', 'Prescription Desk'],
+  },
+  vet_clinic: {
+    role: 'Dr. Murugan Velu (Veterinary Officer)',
+    email: 'doctor@vetcare.in',
+    username: 'vet_admin',
+    badgeEn: 'VetCare Animal Hospital',
+    badgeTa: 'கால்நடை மருத்துவ மையம்',
+    storyEn: 'Pet care appointments, livestock checkups, vaccination alerts, and voice triage for village farmers.',
+    storyTa: 'செல்லப்பிராணிகள் & கால்நடைகளுக்கான மருத்துவப் பதிவு, அவசர சிகிச்சை மற்றும் தடுப்பூசி எச்சரிக்கைகள்.',
+    capabilities: ['Livestock Intake', 'Farm Visit Routing', 'Urgent Symptom Alarm', 'Multilingual Audio'],
+  },
+  hotel_lodge: {
+    role: 'R. Senthil Nathan (Front Desk Manager)',
+    email: 'reservations@saranhotel.com',
+    username: 'hotel_admin',
+    badgeEn: 'Saran Hotel',
+    badgeTa: 'சரண் ஹெரிடேஜ் விடுதி',
+    storyEn: '24/7 automated room reservations, check-in logistics, tariff inquiries, and bilingual guest hospitality.',
+    storyTa: '24 மணி நேர அறை முன்பதிவு, சோதனை நேரம், கட்டண விபரம் மற்றும் விருந்தினர் குரல் வரவேற்பு.',
+    capabilities: ['Instant Availability', 'Tariff & AC Queries', 'Late Arrival Alerts', 'Auto Confirmation'],
+  },
+  restaurant: {
+    role: 'Chef Sundaram Chettiar (Bhavan Manager)',
+    email: 'orders@meenakshibhavan.com',
+    username: 'restaurant_admin',
+    badgeEn: 'Meenakshi Bhavan & Catering',
+    badgeTa: 'மீனாட்சி பவன் உணவகம்',
+    storyEn: 'Table reservations, catering orders, daily specials Q&A, and banquet booking powered by natural voice AI.',
+    storyTa: 'மேஜை முன்பதிவு, சுபமுகூர்த்த கேட்டரிங் ஆர்டர்கள் மற்றும் அன்றாட சிறப்பு உணவு வழிகாட்டி.',
+    capabilities: ['Table Booking', 'Catering Orders', 'Cuisine Menu Bot', 'Party Hall Inquiries'],
+  },
+  coaching: {
+    role: 'Prof. Vigneshwaran K (Academic Director)',
+    email: 'admissions@vetriacademy.edu.in',
+    username: 'coaching_admin',
+    badgeEn: 'Vetri IAS & NEET Academy',
+    badgeTa: 'வெற்றி பயிற்சி மையம்',
+    storyEn: 'Course admissions, batch schedules, syllabus inquiries, and demo session bookings in clear Tamil and English.',
+    storyTa: 'போட்டித் தேர்வுப் பயிற்சி சேர்க்கை, வகுப்பு அட்டவணை, கட்டண விளக்கம் மற்றும் இலவச மாதிரி வகுப்புகள்.',
+    capabilities: ['Batch Enrollments', 'Exam Syllabus Guide', 'Demo Class Booking', 'Parent Helpline'],
+  },
 };
 
 export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
   sector,
   onBack,
   onLoginSuccess,
+  onOpenRegister,
 }) => {
-  const { login } = useAuth();
-  const demo = DEMO_CREDENTIALS_MAP[sector.id] || { username: 'panchayat_admin', label: 'Admin' };
+  const { login, demoLogin } = useAuth();
+  const theme = getSectorTheme(sector.id);
+  const meta = SECTOR_META[sector.id] || {
+    role: 'Workspace Administrator',
+    email: `${sector.id}@vaayil.ai`,
+    username: `${sector.id}_admin`,
+    badgeEn: sector.name,
+    badgeTa: sector.display_name_ta,
+    storyEn: sector.tagline_en,
+    storyTa: sector.tagline_ta,
+    capabilities: ['Voice Agent Desk', 'Tamil Recognition', 'Real-time Triage', 'Audit Logs'],
+  };
 
-  const [username, setUsername] = useState(demo.username);
+  const [identifier, setIdentifier] = useState(meta.username);
   const [password, setPassword] = useState('vaayil123');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDemoSubmitting, setIsDemoSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const doLogin = async (u: string, p: string) => {
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!identifier.trim() || !password) {
+      setErrorMessage('Please enter both username/email and password.');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
-      await login(u, p);
+      await login(identifier.trim(), password);
       onLoginSuccess();
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Authentication failed');
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Authentication failed. Please verify your credentials or use the demo login.'
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); doLogin(username, password); };
-  const handleDemoLogin = () => { setUsername(demo.username); setPassword('vaayil123'); doLogin(demo.username, 'vaayil123'); };
+  const handleDemoAccess = async () => {
+    setIsDemoSubmitting(true);
+    setErrorMessage(null);
+    try {
+      await demoLogin(sector.id);
+      onLoginSuccess();
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Demo authentication failed. Please retry.'
+      );
+    } finally {
+      setIsDemoSubmitting(false);
+    }
+  };
 
-  const theme = getSectorTheme(sector.id);
-  const accent = theme.accent;
+  const fillCredentials = () => {
+    setIdentifier(meta.username);
+    setPassword('vaayil123');
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.93, y: 14 }}
+      initial={{ opacity: 0, scale: 0.96, y: 16 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.93, y: 14 }}
-      transition={{ duration: 0.26, ease: 'easeOut' }}
-      className="w-full max-w-sm mx-auto rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl"
+      exit={{ opacity: 0, scale: 0.96, y: 16 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="w-full rounded-2xl overflow-hidden shadow-2xl backdrop-blur-2xl"
       style={{
-        background: theme.surfaceTint,
+        background: '#080B18',
         border: `1px solid ${theme.borderHighlight}`,
-        boxShadow: `0 0 50px ${theme.glow}, 0 24px 60px rgba(0,0,0,0.85)`,
+        boxShadow: `0 0 60px ${theme.glow}, 0 25px 70px rgba(0,0,0,0.9)`,
       }}
     >
-      {/* Top colour band */}
+      {/* Top Accent Gradient Bar */}
       <div
         className="h-1.5 w-full"
-        style={{ background: `linear-gradient(90deg, ${theme.accent}, ${theme.accentSecondary})` }}
+        style={{
+          background: `linear-gradient(90deg, #32D8E8 0%, ${theme.accent} 50%, ${theme.accentSecondary} 100%)`,
+        }}
       />
 
-      <div className="p-6">
-        {/* Back button */}
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-xs font-medium text-[#9AA7BE] hover:text-[#E8EDF9] transition-colors mb-5 cursor-pointer border-none bg-transparent group"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-          Back to Vaayil Hub
-        </button>
-
-        {/* Sector header */}
-        <div className="flex items-center gap-3.5 mb-5">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
-            style={{ background: `${accent}18`, borderColor: `${accent}40`, color: accent }}
-          >
-            <DynamicIcon name={sector.icon} className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-[#E8EDF9] font-tamil leading-tight">
-              {sector.display_name_ta}
-            </h2>
-            <p className="text-xs text-[#9AA7BE]">{sector.display_name_en}</p>
-          </div>
-        </div>
-
-        {/* Tagline */}
-        <p className="text-xs text-[#9AA7BE] leading-relaxed mb-5 font-tamil p-3 rounded-xl" style={{ background: 'rgba(8,11,24,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
-          {sector.tagline_ta}
-        </p>
-
-        {/* Demo login */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
+        {/* ============================================================
+            LEFT COLUMN: 3D Visual Artwork, Branding & Storytelling
+            ============================================================ */}
         <div
-          className="mb-5 p-3.5 rounded-xl flex items-center justify-between gap-3"
-          style={{ background: 'rgba(50,216,232,0.06)', border: '1px solid rgba(50,216,232,0.20)' }}
+          className="lg:col-span-5 relative flex flex-col justify-between p-6 sm:p-8 overflow-hidden border-b lg:border-b-0 lg:border-r"
+          style={{
+            borderColor: 'rgba(255,255,255,0.08)',
+            background: `radial-gradient(circle at 20% 20%, ${theme.accent}20 0%, #080B18 85%)`,
+          }}
         >
-          <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <Sparkles className="w-3 h-3 text-[#32D8E8]" />
-              <span className="text-xs font-semibold text-[#32D8E8]">Demo Account</span>
+          {/* Subtle Sector 3D Image Artwork in Background */}
+          <div
+            className="absolute inset-0 opacity-20 pointer-events-none mix-blend-screen bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${theme.imagePath})`,
+              filter: 'blur(1px) contrast(1.1)',
+            }}
+          />
+
+          {/* Top Brand Header */}
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 bg-white/5 border border-white/10 backdrop-blur-md">
+              <div className="w-2 h-2 rounded-full bg-[#32D8E8] animate-pulse" />
+              <span className="text-[11px] font-mono tracking-wider text-[#32D8E8] uppercase font-semibold">
+                Vaayil AI · Voice OS
+              </span>
             </div>
-            <p className="text-[11px] text-[#9AA7BE]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-              {demo.username} · {demo.label}
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E8EDF9] tracking-tight mb-1">
+              Vaayil <span style={{ color: theme.accent }}>AI</span>
+            </h1>
+            <p className="text-xs text-[#9AA7BE] font-medium leading-relaxed font-tamil">
+              ஒவ்வொரு தொழிலுக்கும் ஒரே குரல் வாயில்.
+            </p>
+            <p className="text-[11px] text-[#9AA7BE]/80 tracking-wide mt-0.5">
+              Every business. One voice at the door.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            disabled={isSubmitting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all border-none disabled:opacity-50 shrink-0"
-            style={{ background: '#32D8E8', color: '#080B18' }}
-          >
-            {isSubmitting
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : <><CheckCircle2 className="w-3.5 h-3.5" /><span>Enter</span></>
-            }
-          </button>
-        </div>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-          <span className="text-[10px] text-[#4A5568] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace' }}>or sign in</span>
-          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-        </div>
+          {/* Middle 3D Sector Showcase Card */}
+          <div className="relative z-10 my-6">
+            <div
+              className="p-4 rounded-xl border backdrop-blur-xl relative overflow-hidden"
+              style={{
+                background: 'rgba(16, 22, 38, 0.75)',
+                borderColor: `${theme.accent}35`,
+                boxShadow: `0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)`,
+              }}
+            >
+              <div className="flex items-center gap-3.5 mb-3">
+                <div
+                  className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 border"
+                  style={{
+                    background: `${theme.accent}18`,
+                    borderColor: `${theme.accent}45`,
+                    color: theme.accent,
+                  }}
+                >
+                  <DynamicIcon name={sector.icon} className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#E8EDF9] font-tamil leading-tight">
+                    {meta.badgeTa}
+                  </h3>
+                  <p className="text-xs text-[#9AA7BE] font-medium">{meta.badgeEn}</p>
+                </div>
+              </div>
 
-        {/* Error */}
-        {errorMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-3 rounded-xl flex items-center gap-2 text-xs"
-            style={{ background: 'rgba(255,100,124,0.10)', border: '1px solid rgba(255,100,124,0.30)', color: '#FF647C' }}
-          >
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMessage}</span>
-          </motion.div>
-        )}
+              {/* Story Description */}
+              <p className="text-xs text-[#BAC7DF] font-tamil leading-relaxed mb-3">
+                {meta.storyTa}
+              </p>
+              <p className="text-[11px] text-[#8695B0] leading-normal italic">
+                "{meta.storyEn}"
+              </p>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#9AA7BE] mb-1.5">
-              Username
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#9AA7BE] pointer-events-none">
-                <UserIcon className="w-4 h-4" />
-              </span>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                className="input-base pl-10"
-                placeholder="e.g. panchayat_admin"
-              />
+              {/* Animated AI Voice Waveform Visualizer */}
+              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Radio className="w-3.5 h-3.5 text-[#32D8E8] animate-pulse" />
+                  <span className="text-[11px] text-[#32D8E8] font-mono font-medium">
+                    Gnani Prisma Voice Engine
+                  </span>
+                </div>
+                {/* 6-bar audio visualizer */}
+                <div className="flex items-center gap-1 h-4">
+                  {[40, 75, 100, 60, 85, 45].map((h, i) => (
+                    <motion.div
+                      key={i}
+                      className="w-1 rounded-full"
+                      style={{ background: theme.accent }}
+                      animate={{
+                        height: [`${h * 0.3}%`, `${h}%`, `${h * 0.4}%`],
+                      }}
+                      transition={{
+                        duration: 0.9 + i * 0.15,
+                        repeat: Infinity,
+                        repeatType: 'reverse',
+                        ease: 'easeInOut',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#9AA7BE] mb-1.5">
-              Password
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#9AA7BE] pointer-events-none">
-                <Lock className="w-4 h-4" />
-              </span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="input-base pl-10"
-                placeholder="••••••••"
-              />
+          {/* Bottom Capabilities Pills */}
+          <div className="relative z-10">
+            <p className="text-[10px] uppercase font-mono tracking-wider text-[#7E8CA3] mb-2 font-semibold">
+              Included Voice Capabilities
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {meta.capabilities.map((cap, i) => (
+                <span
+                  key={i}
+                  className="text-[10px] font-medium px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-[#C6D2E8]"
+                >
+                  {cap}
+                </span>
+              ))}
             </div>
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer border-none disabled:opacity-60 transition-opacity mt-1"
-            style={{ background: accent, color: '#fff', boxShadow: `0 0 20px ${accent}35` }}
-          >
-            {isSubmitting
-              ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Verifying…</span></>
-              : <span>Sign in to {sector.name}</span>
-            }
-          </button>
-        </form>
+        {/* ============================================================
+            RIGHT COLUMN: Authentication Form & Instant Demo Entry
+            ============================================================ */}
+        <div className="lg:col-span-7 flex flex-col justify-between p-6 sm:p-8 bg-[#0B0F20]/90">
+          <div>
+            {/* Top Navigation Row */}
+            <div className="flex items-center justify-between gap-2 mb-6">
+              <button
+                type="button"
+                onClick={onBack}
+                className="inline-flex items-center gap-2 text-xs font-medium text-[#9AA7BE] hover:text-[#E8EDF9] transition-colors cursor-pointer border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg group"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+                <span>Back to Vaayil Hub</span>
+              </button>
+
+              <div className="flex items-center gap-1.5 text-[11px] text-[#42D6A4] font-medium font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#42D6A4]" />
+                Live TN Sector Ready
+              </div>
+            </div>
+
+            {/* Sector Welcome Title */}
+            <div className="mb-5">
+              <h2 className="text-xl sm:text-2xl font-bold text-[#E8EDF9] tracking-tight">
+                Sign in to {sector.name}
+              </h2>
+              <p className="text-xs text-[#9AA7BE] mt-1">
+                Access your sector dashboard, live call logs, appointments, and voice engine controls.
+              </p>
+            </div>
+
+            {/* One-Click Instant Demo Login Banner */}
+            <div
+              className="mb-5 p-4 rounded-xl border relative overflow-hidden transition-all"
+              style={{
+                background: 'rgba(50, 216, 232, 0.05)',
+                borderColor: 'rgba(50, 216, 232, 0.25)',
+                boxShadow: '0 4px 20px rgba(50, 216, 232, 0.08)',
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-[#32D8E8]/15 border border-[#32D8E8]/30 flex items-center justify-center shrink-0 text-[#32D8E8] mt-0.5">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#32D8E8] uppercase tracking-wider font-mono">
+                        One-Click Demo Account
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#32D8E8]/20 text-[#32D8E8] font-mono">
+                        Fast Access
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-[#E8EDF9] mt-0.5">
+                      {meta.role}
+                    </p>
+                    <p className="text-[11px] text-[#9AA7BE] font-mono">
+                      {meta.email}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleDemoAccess}
+                  disabled={isDemoSubmitting || isSubmitting}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer transition-all border-none text-[#080B18] shrink-0 shadow-lg hover:shadow-cyan-500/25 disabled:opacity-50"
+                  style={{
+                    background: 'linear-gradient(135deg, #32D8E8 0%, #7DE8F5 100%)',
+                  }}
+                >
+                  {isDemoSubmitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Authenticating…</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Enter Workspace</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Quick Fill credentials hint */}
+              <div className="mt-2.5 pt-2 border-t border-[#32D8E8]/15 flex items-center justify-between text-[11px]">
+                <span className="text-[#7E8CA3]">Or test manual credentials:</span>
+                <button
+                  type="button"
+                  onClick={fillCredentials}
+                  className="text-[#32D8E8] hover:underline cursor-pointer bg-transparent border-none p-0 text-[11px] font-mono font-medium"
+                >
+                  Auto-fill form inputs
+                </button>
+              </div>
+            </div>
+
+            {/* Visual Divider */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-[10px] text-[#7E8CA3] uppercase tracking-wider font-mono">
+                or sign in with credentials
+              </span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            {/* Error Message Alert */}
+            {errorMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 p-3.5 rounded-xl flex items-start gap-2.5 text-xs border"
+                style={{
+                  background: 'rgba(255, 100, 124, 0.10)',
+                  borderColor: 'rgba(255, 100, 124, 0.35)',
+                  color: '#FF889B',
+                }}
+              >
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#FF647C]" />
+                <div className="flex-1">
+                  <p className="font-semibold text-[#FF647C]">Login Error</p>
+                  <p className="mt-0.5 leading-relaxed">{errorMessage}</p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Sign-in Form */}
+            <form onSubmit={handleCredentialsSubmit} className="space-y-4">
+              {/* Username or Email Input */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#BAC7DF] mb-1.5 font-mono">
+                  Username or Email Address
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#7E8CA3] pointer-events-none">
+                    <UserIcon className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    required
+                    autoComplete="username"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none transition-all"
+                    style={{
+                      background: 'rgba(16, 22, 38, 0.85)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                    }}
+                    placeholder={`e.g. ${meta.username} or ${meta.email}`}
+                  />
+                </div>
+              </div>
+
+              {/* Password Input with Show/Hide Toggle */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#BAC7DF] font-mono">
+                    Password
+                  </label>
+                  <span className="text-[11px] text-[#7E8CA3] font-mono">
+                    Demo pass: vaayil123
+                  </span>
+                </div>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#7E8CA3] pointer-events-none">
+                    <Lock className="w-4 h-4" />
+                  </span>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    className="w-full pl-10 pr-11 py-2.5 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none transition-all"
+                    style={{
+                      background: 'rgba(16, 22, 38, 0.85)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                    }}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#7E8CA3] hover:text-[#E8EDF9] bg-transparent border-none cursor-pointer transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting || isDemoSubmitting}
+                className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer border-none transition-all mt-2 disabled:opacity-60 shadow-lg"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentSecondary} 100%)`,
+                  color: '#080B18',
+                  boxShadow: `0 4px 20px ${theme.glow}`,
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Verifying Credentials…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign in to {sector.name}</span>
+                  </>
+                )}
+              </button>
+
+              {/* Register Link */}
+              {onOpenRegister && (
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={onOpenRegister}
+                    className="text-xs text-[#32D8E8] hover:underline bg-transparent border-none cursor-pointer font-medium"
+                  >
+                    New business here? Register your account →
+                  </button>
+                </div>
+              )}
+            </form>
+          </div>
+
+          {/* Bottom Security Footer */}
+          <div className="mt-6 pt-4 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[#7E8CA3]">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#42D6A4]" />
+              <span>JWT Signed · Sector RBAC Encrypted</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>Need help?</span>
+              <a
+                href="#hub"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onBack();
+                }}
+                className="text-[#32D8E8] hover:underline"
+              >
+                Return to Hub
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );

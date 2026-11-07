@@ -178,6 +178,7 @@ def run_safety_benchmark(sector_filter: Optional[str] = None) -> Dict[str, Any]:
             }
             for sec, stats in sector_stats.items()
         },
+        "all_results": results,
         "misses_count": len(misses),
         "false_alarms_count": len(false_alarms),
         "misses": misses,

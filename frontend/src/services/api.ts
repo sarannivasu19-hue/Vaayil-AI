@@ -11,6 +11,12 @@ import type {
   CallLogItem,
   DashboardSummary,
   SectorSettingsData,
+  RegisterInput,
+  RegisterResponse,
+  AlertItem,
+  AlertSummary,
+  AdminOverview,
+  AdminUser,
 } from '../types';
 
 const API_BASE = '/api';
@@ -57,6 +63,42 @@ export const api = {
     return res.json();
   },
 
+  async register(input: RegisterInput): Promise<RegisterResponse> {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Registration failed' }));
+      throw new ApiError(err.detail || 'Registration failed', res.status);
+    }
+
+    return res.json();
+  },
+
+  async adminLogin(username: string, password: string): Promise<AuthResponse> {
+    const res = await fetch(`${API_BASE}/auth/admin-login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Admin login failed' }));
+      throw new ApiError(err.detail || 'Admin login failed', res.status);
+    }
+
+    const data: AuthResponse = await res.json();
+    localStorage.setItem('vaayil_token', data.access_token);
+    return data;
+  },
+
   async login(username: string, password: string): Promise<AuthResponse> {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
@@ -69,6 +111,24 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Login failed' }));
       throw new ApiError(err.detail || 'Login failed', res.status);
+    }
+
+    const data: AuthResponse = await res.json();
+    localStorage.setItem('vaayil_token', data.access_token);
+    return data;
+  },
+
+  async demoLogin(sectorId: string): Promise<AuthResponse> {
+    const res = await fetch(`${API_BASE}/auth/demo-login/${sectorId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Demo login failed' }));
+      throw new ApiError(err.detail || 'Demo login failed', res.status);
     }
 
     const data: AuthResponse = await res.json();
@@ -208,7 +268,9 @@ export const api = {
   },
 
   async getHubOverview(): Promise<import('../types').HubOverview> {
-    const res = await fetch(`${API_BASE}/analytics/hub-overview`);
+    const res = await fetch(`${API_BASE}/analytics/hub-overview`, {
+      headers: { ...getAuthHeader() },
+    });
     if (!res.ok) {
       throw new ApiError('Failed to fetch hub overview', res.status);
     }
@@ -413,7 +475,10 @@ export const api = {
     includePhoneSim = true
   ): Promise<any> {
     const formData = new FormData();
-    formData.append('audio_file', audioBlob, 'sample.wav');
+    const isWebm = audioBlob.type.includes('webm');
+    const isOgg = audioBlob.type.includes('ogg');
+    const fileName = (audioBlob as any).name || (isWebm ? 'recorded_audio.webm' : isOgg ? 'recorded_audio.ogg' : 'sample.wav');
+    formData.append('audio_file', audioBlob, fileName);
     formData.append('reference_text', referenceText);
     formData.append('language_mode', languageMode);
     formData.append('noise_levels', noiseLevels);
@@ -493,6 +558,109 @@ export const api = {
     });
     if (!res.ok) {
       throw new ApiError('Failed to execute safety benchmark', res.status);
+    }
+    return res.json();
+  },
+
+  // ==================== URGENT ALERTS API ====================
+  async getAlerts(filters?: {
+    status?: string;
+    severity?: string;
+    sector_id?: string;
+    search?: string;
+  }): Promise<AlertItem[]> {
+    const params = new URLSearchParams();
+    if (filters?.status && filters.status !== 'all') params.append('status', filters.status);
+    if (filters?.severity && filters.severity !== 'all') params.append('severity', filters.severity);
+    if (filters?.sector_id && filters.sector_id !== 'all') params.append('sector_id', filters.sector_id);
+    if (filters?.search) params.append('search', filters.search);
+
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${API_BASE}/alerts${queryStr}`, {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) {
+      throw new ApiError('Failed to fetch urgent alerts', res.status);
+    }
+    return res.json();
+  },
+
+  async getAlertSummary(sectorId?: string): Promise<AlertSummary> {
+    const query = sectorId && sectorId !== 'all' ? `?sector_id=${sectorId}` : '';
+    const res = await fetch(`${API_BASE}/alerts/summary${query}`, {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) {
+      throw new ApiError('Failed to fetch alert summary metrics', res.status);
+    }
+    return res.json();
+  },
+
+  async getAlertDetail(id: number): Promise<AlertItem> {
+    const res = await fetch(`${API_BASE}/alerts/${id}`, {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) {
+      throw new ApiError('Failed to fetch alert detail', res.status);
+    }
+    return res.json();
+  },
+
+  async reviewAlert(id: number, action: string, reviewNotes?: string): Promise<AlertItem> {
+    const res = await fetch(`${API_BASE}/alerts/${id}/review`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ action, review_notes: reviewNotes }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to submit alert review' }));
+      throw new ApiError(err.detail || 'Review update failed', res.status);
+    }
+    return res.json();
+  },
+
+  // ==================== ADMIN API ====================
+  async getAdminOverview(): Promise<AdminOverview> {
+    const res = await fetch(`${API_BASE}/admin/overview`, {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) {
+      throw new ApiError('Failed to fetch admin overview', res.status);
+    }
+    return res.json();
+  },
+
+  async getAdminUsers(params?: { search?: string; sector_id?: string; role?: string }): Promise<AdminUser[]> {
+    const sp = new URLSearchParams();
+    if (params?.search) sp.append('search', params.search);
+    if (params?.sector_id && params.sector_id !== 'all') sp.append('sector_id', params.sector_id);
+    if (params?.role && params.role !== 'all') sp.append('role', params.role);
+
+    const queryStr = sp.toString() ? `?${sp.toString()}` : '';
+    const res = await fetch(`${API_BASE}/admin/users${queryStr}`, {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) {
+      throw new ApiError('Failed to fetch users', res.status);
+    }
+    return res.json();
+  },
+
+  async toggleUserStatus(userId: number, isActive: boolean): Promise<{ success: boolean; message: string; is_active: boolean }> {
+    const res = await fetch(`${API_BASE}/admin/users/${userId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ is_active: isActive }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to update user status' }));
+      throw new ApiError(err.detail || 'Failed to toggle status', res.status);
     }
     return res.json();
   },

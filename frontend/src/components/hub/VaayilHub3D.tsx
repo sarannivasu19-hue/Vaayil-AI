@@ -39,10 +39,10 @@ const DynamicHubLighting: React.FC<{
 
   return (
     <>
-      <ambientLight intensity={activeSector ? 0.65 : 0.5} />
-      <directionalLight position={[5, 8, 5]} intensity={1.0} color="#ffffff" />
-      <directionalLight position={[-5, 5, -5]} intensity={0.5} color={theme.accentSecondary || '#8065FF'} />
-      <pointLight ref={pointLightRef} position={[0, 6, 0]} intensity={0.8} color="#32D8E8" distance={14} />
+      <ambientLight intensity={activeSector ? 0.65 : 0.45} />
+      <directionalLight position={[4, 8, 5]} intensity={0.9} color="#ffffff" />
+      <directionalLight position={[-4, 5, -5]} intensity={0.5} color={theme.accentSecondary || '#8065FF'} />
+      <pointLight ref={pointLightRef} position={[0, 4.5, 0]} intensity={1.2} color="#32D8E8" distance={12} />
     </>
   );
 };
@@ -52,31 +52,38 @@ const CameraRig: React.FC<{
   sectors: Sector[];
   radius: number;
 }> = ({ selectedSector, sectors, radius }) => {
-  const targetPos = useRef(new THREE.Vector3(0, 2.2, 8.5));
-  const targetLook = useRef(new THREE.Vector3(0, 0.4, 0));
+  const targetPos = useRef(new THREE.Vector3(0, 1.9, 8.8));
+  const targetLook = useRef(new THREE.Vector3(0, 0.3, 0));
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
+    // Elegant mouse parallax (subtle depth tilt, no spinning)
+    const parallaxX = state.pointer.x * 0.9;
+    const parallaxY = state.pointer.y * 0.45;
+
     if (selectedSector) {
       const index = sectors.findIndex((s) => s.id === selectedSector.id);
       const angle = (index / (sectors.length || 1)) * Math.PI * 2 - Math.PI / 2;
       const sx = Math.cos(angle) * radius;
       const sz = Math.sin(angle) * radius;
-      targetPos.current.set(sx * 0.78, 1.1, sz * 0.78 + 2.4);
+      targetPos.current.set(sx * 0.75 + parallaxX * 0.3, 1.2 + parallaxY * 0.2, sz * 0.75 + 2.5);
       targetLook.current.set(sx, 0.2, sz);
     } else {
-      const driftX = Math.sin(t * 0.22) * 0.7;
-      const driftY = 2.1 + Math.cos(t * 0.30) * 0.22;
-      targetPos.current.set(driftX, driftY, 8.5);
+      // Slow organic idle drift with mouse parallax
+      const driftX = Math.sin(t * 0.15) * 0.4 + parallaxX;
+      const driftY = 1.9 + Math.cos(t * 0.2) * 0.15 + parallaxY;
+      targetPos.current.set(driftX, driftY, 8.8);
       targetLook.current.set(0, 0.3, 0);
     }
+
     state.camera.position.lerp(targetPos.current, 0.045);
     const currentLook = new THREE.Vector3();
     state.camera.getWorldDirection(currentLook);
     const targetDirection = targetLook.current.clone().sub(state.camera.position).normalize();
-    currentLook.lerp(targetDirection, 0.055);
+    currentLook.lerp(targetDirection, 0.05);
     state.camera.lookAt(state.camera.position.clone().add(currentLook));
   });
+
   return null;
 };
 
@@ -87,15 +94,18 @@ export const VaayilHub3D: React.FC<VaayilHub3DProps> = ({
   onHoverSector,
   onSelectSector,
 }) => {
-  const RADIUS = 4.4;
+  const RADIUS = 4.2;
   const activeSector = hoveredSector || selectedSector;
   const theme = getSectorTheme(activeSector?.id);
+
+  // Filter out system admin sector from 3D public ring
+  const displaySectors = sectors.filter((s) => s.id !== 'system');
 
   return (
     <div className="w-full h-full absolute inset-0">
       <Canvas
-        camera={{ position: [0, 2.2, 8.5], fov: 46 }}
-        dpr={[1, 1.6]}
+        camera={{ position: [0, 1.9, 8.8], fov: 45 }}
+        dpr={[1, 1.5]}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
       >
         <color attach="background" args={['#080B18']} />
@@ -103,33 +113,33 @@ export const VaayilHub3D: React.FC<VaayilHub3DProps> = ({
         {/* Dynamic Theme Lighting */}
         <DynamicHubLighting activeSector={activeSector} />
 
-        {/* Soft environment for metallic reflections */}
+        {/* Soft environment for metallic and glass reflections */}
         <Environment preset="night" />
 
-        {/* Ambient particles tailored to active theme */}
+        {/* Ambient floating dust particles */}
         <Sparkles
-          count={60}
-          scale={18}
-          size={1.8}
-          speed={0.25}
+          count={50}
+          scale={16}
+          size={1.6}
+          speed={0.2}
           color={theme.accent || '#32D8E8'}
-          opacity={0.55}
+          opacity={0.5}
         />
         <Sparkles
-          count={35}
-          scale={14}
-          size={1.4}
-          speed={0.18}
-          color={theme.accentSecondary || '#A58EFF'}
-          opacity={0.4}
+          count={30}
+          scale={12}
+          size={1.2}
+          speed={0.15}
+          color="#8065FF"
+          opacity={0.35}
         />
 
-        {/* Central portal */}
+        {/* Central Intelligent AI Voice Core */}
         <HubPortal3D />
 
-        {/* Sector nodes */}
-        {sectors.map((sector, index) => {
-          const angle = (index / (sectors.length || 1)) * Math.PI * 2 - Math.PI / 2;
+        {/* Six Sector Nodes arranged around core */}
+        {displaySectors.map((sector, index) => {
+          const angle = (index / (displaySectors.length || 1)) * Math.PI * 2 - Math.PI / 2;
           return (
             <SectorNode3D
               key={sector.id}
@@ -145,22 +155,21 @@ export const VaayilHub3D: React.FC<VaayilHub3DProps> = ({
 
         <CameraRig
           selectedSector={selectedSector}
-          sectors={sectors}
+          sectors={displaySectors}
           radius={RADIUS}
         />
       </Canvas>
 
-      {/* Hub text overlay — cinematic */}
+      {/* Cinematic Bottom Guide */}
       <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-end pb-16 z-10">
-        <div className="text-center space-y-1.5 opacity-80">
+        <div className="text-center space-y-1.5 opacity-85">
           <p
-            className="text-xs tracking-[0.3em] uppercase text-[#9AA7BE]"
-            style={{ fontFamily: 'JetBrains Mono, monospace' }}
+            className="text-xs tracking-[0.25em] uppercase text-[#9AA7BE] font-mono"
           >
-            One intelligent voice · Six powerful workspaces
+            Holographic AI Voice Core · Six Enterprise Workspaces
           </p>
-          <p className="text-xs text-[#4A5568] font-tamil">
-            உங்கள் துறையை தேர்வு செய்ய கிளிக் செய்யவும்
+          <p className="text-xs text-[#7E8CA3] font-tamil">
+            துறை பணியிடத்தை திறக்க ஏதேனும் ஒரு முனையத்தை கிளிக் செய்யவும்
           </p>
         </div>
       </div>

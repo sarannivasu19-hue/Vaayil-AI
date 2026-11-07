@@ -3,128 +3,132 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 export const HubPortal3D: React.FC = () => {
-  const outerRingRef = useRef<THREE.Mesh>(null);
-  const innerRingRef = useRef<THREE.Mesh>(null);
-  const coreRef = useRef<THREE.Mesh>(null);
-  const archGroupRef = useRef<THREE.Group>(null);
+  const coreMeshRef = useRef<THREE.Mesh>(null);
+  const outerGlassRef = useRef<THREE.Mesh>(null);
+  const neuralRing1Ref = useRef<THREE.Mesh>(null);
+  const neuralRing2Ref = useRef<THREE.Mesh>(null);
+  const groundGlowRef = useRef<THREE.Mesh>(null);
 
-  useFrame((state, delta) => {
+  useFrame((state) => {
     const t = state.clock.getElapsedTime();
-    if (outerRingRef.current) {
-      outerRingRef.current.rotation.z += delta * 0.12;
-      outerRingRef.current.rotation.x = Math.sin(t * 0.35) * 0.06;
+
+    // 1. Central Holographic Core breathing (slow, organic pulse)
+    if (coreMeshRef.current) {
+      const breath = 1.0 + Math.sin(t * 1.5) * 0.06;
+      coreMeshRef.current.scale.set(breath, breath, breath);
+      // Gentle subtle wobble in rotation, not wild continuous spinning
+      coreMeshRef.current.rotation.y = Math.sin(t * 0.3) * 0.25;
+      coreMeshRef.current.rotation.x = Math.cos(t * 0.25) * 0.15;
     }
-    if (innerRingRef.current) {
-      innerRingRef.current.rotation.z -= delta * 0.22;
-      innerRingRef.current.rotation.y = Math.cos(t * 0.35) * 0.06;
+
+    // 2. Outer frosted glass sphere gentle elevation
+    if (outerGlassRef.current) {
+      outerGlassRef.current.position.y = 0.5 + Math.sin(t * 0.8) * 0.05;
+      outerGlassRef.current.rotation.y = Math.sin(t * 0.15) * 0.1;
     }
-    if (coreRef.current) {
-      const scale = 1 + Math.sin(t * 1.4) * 0.055;
-      coreRef.current.scale.set(scale, scale, scale);
-      (coreRef.current.material as THREE.MeshBasicMaterial).opacity =
-        0.28 + Math.sin(t * 1.4) * 0.08;
+
+    // 3. Subtle neural wave rings with slow elegant tilt
+    if (neuralRing1Ref.current) {
+      neuralRing1Ref.current.rotation.x = Math.PI / 2.3 + Math.sin(t * 0.5) * 0.08;
+      neuralRing1Ref.current.rotation.y = Math.cos(t * 0.4) * 0.1;
     }
-    if (archGroupRef.current) {
-      archGroupRef.current.position.y = 0.4 + Math.sin(t * 0.5) * 0.04;
+    if (neuralRing2Ref.current) {
+      neuralRing2Ref.current.rotation.x = Math.PI / 1.8 + Math.cos(t * 0.45) * 0.08;
+      neuralRing2Ref.current.rotation.y = Math.sin(t * 0.35) * 0.12;
+    }
+
+    // 4. Ground subtle glow pulse
+    if (groundGlowRef.current) {
+      const glowScale = 1.0 + Math.sin(t * 1.2) * 0.04;
+      groundGlowRef.current.scale.set(glowScale, glowScale, 1);
     }
   });
 
   return (
     <group position={[0, 0, 0]}>
-      {/* Doorway arch geometry */}
-      <group ref={archGroupRef} position={[0, 0.4, 0]}>
-        {/* Left pillar */}
-        <mesh position={[-1.15, 0, 0]}>
-          <boxGeometry args={[0.18, 2.6, 0.18]} />
+      {/* ============================================================
+          1. CENTRAL INTELLIGENT AI VOICE CORE
+          ============================================================ */}
+      <group position={[0, 0.5, 0]}>
+        {/* Inner Pulsing Audio Energy Core (Emissive Cyan/Violet) */}
+        <mesh ref={coreMeshRef}>
+          <icosahedronGeometry args={[0.78, 4]} />
           <meshStandardMaterial
-            color="#17152D"
+            color="#32D8E8"
             emissive="#8065FF"
-            emissiveIntensity={0.35}
-            roughness={0.15}
-            metalness={0.9}
+            emissiveIntensity={1.4}
+            roughness={0.2}
+            metalness={0.8}
+            wireframe={false}
           />
         </mesh>
-        {/* Right pillar */}
-        <mesh position={[1.15, 0, 0]}>
-          <boxGeometry args={[0.18, 2.6, 0.18]} />
-          <meshStandardMaterial
-            color="#17152D"
-            emissive="#8065FF"
-            emissiveIntensity={0.35}
-            roughness={0.15}
-            metalness={0.9}
-          />
-        </mesh>
-        {/* Top arch beam */}
-        <mesh position={[0, 1.3, 0]}>
-          <boxGeometry args={[2.46, 0.2, 0.2]} />
-          <meshStandardMaterial
-            color="#17152D"
+
+        {/* Outer Holographic Frosted Glass Sphere */}
+        <mesh ref={outerGlassRef}>
+          <sphereGeometry args={[1.18, 36, 36]} />
+          <meshPhysicalMaterial
+            color="#E8EDF9"
             emissive="#32D8E8"
-            emissiveIntensity={0.55}
-            roughness={0.15}
+            emissiveIntensity={0.35}
+            roughness={0.08}
+            metalness={0.15}
+            transmission={0.85}
+            thickness={1.2}
+            ior={1.45}
+            transparent
+            opacity={0.65}
+          />
+        </mesh>
+
+        {/* Layered Neural Voice Wave Rings (Slow Breathing, not spinning) */}
+        <mesh ref={neuralRing1Ref} rotation={[Math.PI / 2.2, 0, 0]}>
+          <torusGeometry args={[1.55, 0.022, 16, 64]} />
+          <meshStandardMaterial
+            color="#32D8E8"
+            emissive="#32D8E8"
+            emissiveIntensity={1.8}
+            roughness={0.1}
             metalness={0.9}
           />
         </mesh>
-        {/* Arch corner caps */}
-        <mesh position={[-1.15, 1.3, 0]}>
-          <boxGeometry args={[0.22, 0.22, 0.22]} />
-          <meshStandardMaterial color="#A58EFF" emissive="#A58EFF" emissiveIntensity={1.2} roughness={0.1} metalness={0.9} />
+
+        <mesh ref={neuralRing2Ref} rotation={[Math.PI / 1.8, 0, 0]}>
+          <torusGeometry args={[1.75, 0.018, 16, 64]} />
+          <meshStandardMaterial
+            color="#A58EFF"
+            emissive="#8065FF"
+            emissiveIntensity={1.6}
+            roughness={0.1}
+            metalness={0.9}
+          />
         </mesh>
-        <mesh position={[1.15, 1.3, 0]}>
-          <boxGeometry args={[0.22, 0.22, 0.22]} />
-          <meshStandardMaterial color="#A58EFF" emissive="#A58EFF" emissiveIntensity={1.2} roughness={0.1} metalness={0.9} />
-        </mesh>
+
+        {/* Core Lighting */}
+        <pointLight position={[0, 0, 0]} color="#32D8E8" intensity={3.5} distance={7} />
+        <pointLight position={[0, 0.5, 0.8]} color="#8065FF" intensity={2.0} distance={5} />
       </group>
 
-      {/* Outer violet ring */}
-      <mesh ref={outerRingRef} position={[0, 0.4, 0]}>
-        <torusGeometry args={[2.0, 0.038, 16, 64]} />
-        <meshStandardMaterial
-          color="#8065FF"
-          emissive="#8065FF"
-          emissiveIntensity={2.2}
-          roughness={0.08}
-          metalness={0.95}
-        />
-      </mesh>
+      {/* ============================================================
+          2. GROUND HOLOGRAPHIC REFLECTION PEDESTAL
+          ============================================================ */}
+      <group position={[0, -1.3, 0]}>
+        {/* Base dark reflective disk */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[2.8, 48]} />
+          <meshStandardMaterial color="#0A0F22" roughness={0.3} metalness={0.8} />
+        </mesh>
 
-      {/* Inner cyan ring */}
-      <mesh ref={innerRingRef} position={[0, 0.4, 0]}>
-        <torusGeometry args={[1.42, 0.028, 16, 48]} />
-        <meshStandardMaterial
-          color="#32D8E8"
-          emissive="#32D8E8"
-          emissiveIntensity={2.0}
-          roughness={0.08}
-          metalness={0.95}
-        />
-      </mesh>
+        {/* Concentric luminous cyan boundary rings */}
+        <mesh ref={groundGlowRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+          <ringGeometry args={[2.55, 2.7, 64]} />
+          <meshBasicMaterial color="#32D8E8" transparent opacity={0.4} side={THREE.DoubleSide} />
+        </mesh>
 
-      {/* Portal core disc */}
-      <mesh ref={coreRef} position={[0, 0.4, -0.04]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.85, 0.85, 0.04, 32]} />
-        <meshBasicMaterial
-          color="#8065FF"
-          transparent
-          opacity={0.3}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-
-      {/* Ground disc */}
-      <mesh position={[0, -1.2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[2.6, 32]} />
-        <meshStandardMaterial color="#080B18" roughness={0.3} metalness={0.9} />
-      </mesh>
-      <mesh position={[0, -1.19, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[2.4, 2.56, 48]} />
-        <meshBasicMaterial color="#8065FF" transparent opacity={0.35} />
-      </mesh>
-
-      {/* Portal lights */}
-      <pointLight position={[0, 0.5, 0.5]}  color="#32D8E8" intensity={4.0} distance={8} />
-      <pointLight position={[0, 0.5, -0.5]} color="#8065FF" intensity={2.5} distance={6} />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
+          <ringGeometry args={[1.8, 1.88, 48]} />
+          <meshBasicMaterial color="#8065FF" transparent opacity={0.25} side={THREE.DoubleSide} />
+        </mesh>
+      </group>
     </group>
   );
 };

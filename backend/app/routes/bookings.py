@@ -232,11 +232,14 @@ def confirm_booking(
 
     if is_urgent:
         alert = Alert(
-            call_log_id=call_log.id,
+            call_id=call_log.id,
             sector_id=payload.sector_id,
+            phone=phone,
+            matched_keyword=matched_kw or "urgent",
+            snippet=history[-1]["text"] if history else "Emergency detected during voice booking.",
             severity="critical",
             reason=f"Emergency symptom detected: {matched_kw}",
-            status="pending_review",
+            status="new",
         )
         db.add(alert)
 

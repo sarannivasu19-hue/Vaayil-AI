@@ -43,9 +43,93 @@ export interface User {
   username: string;
   email: string;
   full_name: string;
+  phone?: string;
   role: 'owner' | 'staff' | 'admin';
+  is_active?: boolean;
   sector_id: string;
   created_at: string;
+}
+
+export interface RegisterInput {
+  full_name: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirm_password: string;
+  sector_id: string;
+  terms_accepted: boolean;
+}
+
+export interface RegisterResponse {
+  message: string;
+  user: User;
+}
+
+export interface AlertItem {
+  id: number;
+  sector_id: string;
+  sector_name?: string;
+  sector_icon?: string;
+  sector_accent?: string;
+  call_id?: number;
+  phone: string;
+  reason: string;
+  matched_keyword: string;
+  snippet: string;
+  severity: 'critical' | 'high' | 'medium';
+  status: 'new' | 'under_review' | 'confirmed' | 'resolved' | 'false_alarm';
+  reviewed_by?: string;
+  reviewed_at?: string;
+  review_notes?: string;
+  is_dev_sample: boolean;
+  created_at: string;
+  transcript_turns: Array<{ speaker: string; text: string }>;
+}
+
+export interface AlertSummary {
+  total_alerts: number;
+  new_alerts: number;
+  under_review: number;
+  confirmed_urgent: number;
+  resolved_alerts: number;
+  false_alarms: number;
+}
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+  phone?: string;
+  role: string;
+  is_active: boolean;
+  sector_id?: string;
+  created_at: string;
+}
+
+export interface AdminOverview {
+  total_users: number;
+  active_users: number;
+  total_sectors: number;
+  total_calls: number;
+  total_bookings: number;
+  total_alerts: number;
+  new_alerts: number;
+  confirmed_alerts: number;
+  system_status: string;
+  integrations: Record<string, any>;
+  sector_breakdown: Array<{
+    sector_id: string;
+    name: string;
+    display_name_ta: string;
+    display_name_en: string;
+    icon: string;
+    accent_color: string;
+    users_count: number;
+    calls_count: number;
+    bookings_count: number;
+    alerts_count: number;
+  }>;
 }
 
 export interface AuthResponse {
@@ -110,6 +194,7 @@ export interface DashboardSummary {
   completion_rate_pct: number;
   avg_call_duration_seconds: number;
   urgent_alerts_count: number;
+  pending_actions_count?: number;
   calls_per_day: { date: string; count: number }[];
   outcomes: { outcome: string; count: number }[];
   top_intents: { intent: string; count: number }[];
@@ -122,6 +207,11 @@ export interface DashboardSummary {
     time: string;
     urgent: boolean;
   }[];
+  language_distribution?: { language: string; count: number; percentage: number }[];
+  booking_trends?: { date: string; count: number }[];
+  booking_statuses?: { status: string; count: number }[];
+  sector_comparison?: { sector_id: string; name: string; calls: number; bookings: number }[];
+  recent_alerts?: { id: number; caller_phone: string; reason: string; status: string; created_at: string }[];
 }
 
 export interface SectorOverviewStat {
@@ -154,14 +244,35 @@ export interface HubOverview {
   daily_trends: { date: string; count: number }[];
 }
 
+export interface AgentQuestion {
+  id: string;
+  text_en: string;
+  text_ta: string;
+  order: number;
+}
+
 export interface SectorSettingsData {
+  // Business Profile
   business_name: string;
-  working_hours: string;
+  contact_phone: string;
+  contact_email: string;
+  // Working Hours
+  open_time: string;
+  close_time: string;
+  working_days: string[];
+  // Booking
   slot_length_minutes: number;
+  // Voice & Language
   language_mode: string;
   tts_voice: string;
+  // Agent Questions
+  agent_questions: AgentQuestion[];
+  // Urgent Keywords
   urgent_keywords: string[];
+  // Privacy
   store_audio: boolean;
+  data_retention_days?: number;
+  consent_banner_enabled?: boolean;
 }
 
 export interface CallLogItem {
@@ -334,6 +445,7 @@ export interface SafetyBenchmarkResult {
   false_alarms_count: number;
   misses: SafetyEvaluationItem[];
   false_alarms: SafetyEvaluationItem[];
+  all_results: SafetyEvaluationItem[];
   suggested_improvements: { type: string; item_id: string; text: string; reason: string }[];
   clinical_disclaimer: string;
 }

@@ -111,14 +111,19 @@ async def run_noise_lab_experiment(
             f.write(audio_bytes)
 
         clean_wav_path = os.path.join(temp_dir, "clean_baseline.wav")
-        if ext in {".webm", ".ogg"}:
+        is_genuine_wav = (
+            len(audio_bytes) >= 12
+            and audio_bytes[:4] == b"RIFF"
+            and audio_bytes[8:12] == b"WAVE"
+        )
+        if not is_genuine_wav or ext in {".webm", ".ogg", ".mp3", ".m4a", ".aac", ".flac"}:
             try:
                 convert_webm_to_wav(raw_input_path, clean_wav_path)
             except Exception as exc:
-                logger.error("WebM conversion failed in Noise Lab: %s", exc)
+                logger.error("Audio conversion failed in Noise Lab: %s", exc)
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Audio conversion failed: {exc}. Ensure valid WebM or WAV audio."
+                    detail=f"Audio conversion failed: {exc}. Ensure valid recorded or uploaded audio."
                 )
         else:
             # Copy or write directly as WAV

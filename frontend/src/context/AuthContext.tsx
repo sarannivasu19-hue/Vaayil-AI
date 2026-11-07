@@ -1,14 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { User, Sector, HealthStatus } from '../types';
+import type { User, Sector, HealthStatus, RegisterInput, RegisterResponse } from '../types';
 import { api } from '../services/api';
 
 interface AuthContextType {
   user: User | null;
   activeSector: Sector | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   health: HealthStatus | null;
   login: (username: string, password: string) => Promise<void>;
+  adminLogin: (username: string, password: string) => Promise<void>;
+  demoLogin: (sectorId: string) => Promise<void>;
+  registerUser: (input: RegisterInput) => Promise<RegisterResponse>;
   logout: () => void;
   setActiveSector: (sector: Sector | null) => void;
   refreshHealth: () => Promise<void>;
@@ -68,6 +72,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const adminLogin = async (username: string, password: string) => {
+    const data = await api.adminLogin(username, password);
+    setUser(data.user);
+    if (data.sector) {
+      setActiveSector(data.sector);
+    }
+  };
+
+  const registerUser = async (input: RegisterInput): Promise<RegisterResponse> => {
+    return await api.register(input);
+  };
+
+  const demoLogin = async (sectorId: string) => {
+    const data = await api.demoLogin(sectorId);
+    setUser(data.user);
+    if (data.sector) {
+      setActiveSector(data.sector);
+    }
+  };
+
   const logout = () => {
     api.logout();
     setUser(null);
@@ -80,9 +104,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         activeSector,
         isAuthenticated: !!user,
+        isAdmin: user?.role === 'admin',
         isLoading,
         health,
         login,
+        adminLogin,
+        demoLogin,
+        registerUser,
         logout,
         setActiveSector,
         refreshHealth,

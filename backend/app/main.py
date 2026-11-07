@@ -17,6 +17,8 @@ from app.routes.analytics import router as analytics_router
 from app.routes.settings import router as settings_router
 from app.routes.noise_lab import router as noise_lab_router
 from app.routes.safety_test import router as safety_test_router
+from app.routes.admin import router as admin_router
+from app.routes.alerts import router as alerts_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -84,6 +86,8 @@ app.include_router(analytics_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
 app.include_router(noise_lab_router, prefix="/api")
 app.include_router(safety_test_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
+app.include_router(alerts_router, prefix="/api")
 
 
 @app.get("/")

@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
     # Database
-    DATABASE_URL: str = "sqlite:///./vaayil.db"
+    DATABASE_URL: str = f"sqlite:///{(BACKEND_DIR / 'vaayil.db').resolve().as_posix()}"
 
     # Environment & CORS
     ENVIRONMENT: str = "development"

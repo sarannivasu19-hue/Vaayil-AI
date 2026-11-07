@@ -8,6 +8,21 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    full_name: str
+    email: str
+    phone: str
+    password: str
+    confirm_password: str
+    sector_id: str
+    terms_accepted: bool = False
+
+
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -15,9 +30,16 @@ class UserResponse(BaseModel):
     username: str
     email: str
     full_name: str
+    phone: Optional[str] = None
     role: str
-    sector_id: str
+    is_active: bool = True
+    sector_id: Optional[str] = None
     created_at: datetime
+
+
+class RegisterResponse(BaseModel):
+    message: str
+    user: UserResponse
 
 
 class SectorBrief(BaseModel):

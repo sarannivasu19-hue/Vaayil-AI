@@ -2,9 +2,9 @@ from app.sectors.base import SectorPackage, SlotDefinition, SlotPrompt, SampleBo
 
 PACKAGE = SectorPackage(
     id="hotel_lodge",
-    name="Marutham Heritage Inn & Lodge",
-    display_name_ta="மருதம் ஹெரிடேஜ் தங்கும் விடுதி",
-    display_name_en="Marutham Heritage Inn & Lodge",
+    name="Saran Hotel",
+    display_name_ta="சரண் ஹெரிடேஜ் தங்கும் விடுதி",
+    display_name_en="Saran Hotel",
     tagline_ta="அறைகள் முன்பதிவு, சோதனை நேரம் மற்றும் விருந்தினர் சேவை",
     tagline_en="Room reservations, check-in schedules & guest assistance",
     description="Front desk voice receptionist handling AC/Non-AC room inquiries, family suites, and temple pilgrimage bookings.",
@@ -16,7 +16,7 @@ PACKAGE = SectorPackage(
     schedule_time_key="room_type",
     demo_user={
         "username": "hotel_admin",
-        "email": "reservations@maruthaminn.com",
+        "email": "reservations@saranhotel.com",
         "full_name": "R. Senthil Nathan (Front Desk Manager)",
         "role": "owner",
     },
@@ -28,9 +28,9 @@ PACKAGE = SectorPackage(
             type="text",
             required=True,
             prompts=SlotPrompt(
-                ta="வணக்கம், மருதம் விடுதிக்கு வரவேற்கிறோம். உங்கள் பெயரை கூறுங்கள்?",
-                tanglish="Vanakkam, Marutham Inn-ku welcome. Unga peyar enna?",
-                en="Welcome to Marutham Heritage Inn. May I have your name for the reservation?"
+                ta="வணக்கம், சரண் ஹோட்டலுக்கு வரவேற்கிறோம். உங்கள் பெயரை கூறுங்கள்?",
+                tanglish="Vanakkam, Saran Hotel-ku welcome. Unga peyar enna?",
+                en="Welcome to Saran Hotel. May I have your name for the reservation?"
             ),
             description="Primary guest name"
         ),
