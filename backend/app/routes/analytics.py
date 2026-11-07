@@ -45,6 +45,28 @@ class PeakHour(BaseModel):
     calls: int
 
 
+class SectorOverviewStat(BaseModel):
+    sector_id: str
+    calls_today: int
+    total_calls: int
+    bookings_today: int
+    total_bookings: int
+    urgent_alerts: int
+    last_call_at: Optional[str] = None
+
+
+class HubOverviewResponse(BaseModel):
+    total_calls: int
+    today_calls: int
+    total_bookings: int
+    today_bookings: int
+    total_urgent_alerts: int
+    overall_completion_rate: float
+    sector_stats: Dict[str, SectorOverviewStat]
+    recent_calls: List[Dict[str, Any]]
+    daily_trends: List[DailyCount]
+
+
 class DashboardSummaryResponse(BaseModel):
     today_calls: int
     today_bookings: int
@@ -253,5 +275,92 @@ def export_bookings_csv(
         content=output.getvalue(),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=bookings_{current_user.sector_id}.csv"}
+    )
+
+
+@router.get("/hub-overview", response_model=HubOverviewResponse)
+def get_hub_overview(
+    db: Session = Depends(get_db),
+):
+    """
+    GET /api/analytics/hub-overview
+    Provides aggregated platform-wide intelligence across all 6 sectors for the Main Hub Dashboard.
+    Dynamic from database; no fake data.
+    """
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    def to_naive(dt: Optional[datetime]) -> Optional[datetime]:
+        if dt is None:
+            return None
+        return dt.replace(tzinfo=None) if dt.tzinfo else dt
+
+    all_calls = db.query(CallLog).order_by(CallLog.created_at.desc()).all()
+    all_bookings = db.query(Booking).all()
+    all_alerts = db.query(Alert).filter(Alert.status == "pending_review").all()
+
+    total_calls = len(all_calls)
+    today_calls = sum(1 for c in all_calls if to_naive(c.created_at) and to_naive(c.created_at) >= today_start)
+    total_bookings = len(all_bookings)
+    today_bookings = sum(1 for b in all_bookings if to_naive(b.created_at) and to_naive(b.created_at) >= today_start)
+    total_urgent_alerts = len(all_alerts)
+
+    completed_calls = sum(1 for c in all_calls if c.outcome in ("booked", "completed"))
+    overall_completion_rate = round((completed_calls / total_calls * 100), 1) if total_calls > 0 else 0.0
+
+    # Sector breakdown
+    sector_stats: Dict[str, SectorOverviewStat] = {}
+    known_sectors = ["panchayat_health", "clinic", "vet_clinic", "hotel_lodge", "restaurant", "coaching"]
+    for s_id in known_sectors:
+        s_calls = [c for c in all_calls if c.sector_id == s_id]
+        s_bookings = [b for b in all_bookings if b.sector_id == s_id]
+        s_alerts = [a for a in all_alerts if a.sector_id == s_id]
+
+        sector_stats[s_id] = SectorOverviewStat(
+            sector_id=s_id,
+            calls_today=sum(1 for c in s_calls if to_naive(c.created_at) and to_naive(c.created_at) >= today_start),
+            total_calls=len(s_calls),
+            bookings_today=sum(1 for b in s_bookings if to_naive(b.created_at) and to_naive(b.created_at) >= today_start),
+            total_bookings=len(s_bookings),
+            urgent_alerts=len(s_alerts),
+            last_call_at=s_calls[0].created_at.isoformat() if s_calls and s_calls[0].created_at else None,
+        )
+
+    # 7-day trend across platform
+    daily_map: Dict[str, int] = {}
+    for i in range(6, -1, -1):
+        day_str = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        daily_map[day_str] = 0
+
+    for c in all_calls:
+        if c.created_at:
+            d_str = to_naive(c.created_at).strftime("%Y-%m-%d")
+            if d_str in daily_map:
+                daily_map[d_str] += 1
+
+    daily_trends = [DailyCount(date=d, count=cnt) for d, cnt in daily_map.items()]
+
+    recent_calls = []
+    for c in all_calls[:6]:
+        recent_calls.append({
+            "id": c.id,
+            "sector_id": c.sector_id,
+            "caller_phone": c.caller_phone,
+            "outcome": c.outcome,
+            "duration": f"{c.duration_seconds}s",
+            "time": c.created_at.strftime("%H:%M") if c.created_at else "",
+            "urgent": c.urgent_flag,
+        })
+
+    return HubOverviewResponse(
+        total_calls=total_calls,
+        today_calls=today_calls,
+        total_bookings=total_bookings,
+        today_bookings=today_bookings,
+        total_urgent_alerts=total_urgent_alerts,
+        overall_completion_rate=overall_completion_rate,
+        sector_stats=sector_stats,
+        recent_calls=recent_calls,
+        daily_trends=daily_trends,
     )
 

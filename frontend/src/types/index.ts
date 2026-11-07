@@ -124,6 +124,36 @@ export interface DashboardSummary {
   }[];
 }
 
+export interface SectorOverviewStat {
+  sector_id: string;
+  calls_today: number;
+  total_calls: number;
+  bookings_today: number;
+  total_bookings: number;
+  urgent_alerts: number;
+  last_call_at: string | null;
+}
+
+export interface HubOverview {
+  total_calls: number;
+  today_calls: number;
+  total_bookings: number;
+  today_bookings: number;
+  total_urgent_alerts: number;
+  overall_completion_rate: number;
+  sector_stats: Record<string, SectorOverviewStat>;
+  recent_calls: {
+    id: number;
+    sector_id: string;
+    caller_phone: string;
+    outcome: string;
+    duration: string;
+    time: string;
+    urgent: boolean;
+  }[];
+  daily_trends: { date: string; count: number }[];
+}
+
 export interface SectorSettingsData {
   business_name: string;
   working_hours: string;

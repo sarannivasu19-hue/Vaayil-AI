@@ -207,6 +207,14 @@ export const api = {
     return res.json();
   },
 
+  async getHubOverview(): Promise<import('../types').HubOverview> {
+    const res = await fetch(`${API_BASE}/analytics/hub-overview`);
+    if (!res.ok) {
+      throw new ApiError('Failed to fetch hub overview', res.status);
+    }
+    return res.json();
+  },
+
   async clearDemoData(): Promise<{ message: string; success: boolean }> {
     const res = await fetch(`${API_BASE}/demo/clear`, {
       method: 'POST',
