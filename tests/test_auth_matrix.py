@@ -5,11 +5,11 @@ import json
 BASE = 'http://127.0.0.1:8000/api'
 SECTORS = [
     ('panchayat_health', 'panchayat_admin', 'health.desk@panchayat.tn.gov.in'),
-    ('clinic', 'clinic_admin', 'appointments@arulclinic.com'),
-    ('vet_clinic', 'vet_admin', 'doctor@vetcare.in'),
-    ('hotel_lodge', 'hotel_admin', 'reservations@maruthaminn.com'),
-    ('restaurant', 'restaurant_admin', 'orders@meenakshibhavan.com'),
-    ('coaching', 'coaching_admin', 'admissions@vetriacademy.edu.in'),
+    ('clinic', 'clinic_admin', 'appointments@saranclinic.com'),
+    ('vet_clinic', 'vet_admin', 'doctor@govtvetmedcentre.tn.gov.in'),
+    ('hotel_lodge', 'hotel_admin', 'reservations@saranhotel.com'),
+    ('restaurant', 'restaurant_admin', 'orders@saranrestaurant.com'),
+    ('coaching', 'coaching_admin', 'admissions@sarancoaching.com'),
 ]
 
 print("=== 1. TESTING DEMO-LOGIN FOR ALL 6 SECTORS ===")

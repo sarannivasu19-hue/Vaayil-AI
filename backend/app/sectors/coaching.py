@@ -2,9 +2,9 @@ from app.sectors.base import SectorPackage, SlotDefinition, SlotPrompt, SampleBo
 
 PACKAGE = SectorPackage(
     id="coaching",
-    name="Vetri TNPSC & NEET Academy",
-    display_name_ta="வெற்றி போட்டித் தேர்வு பயிற்சி மையம்",
-    display_name_en="Vetri TNPSC & NEET Academy",
+    name="Saran Coaching Centre",
+    display_name_ta="சரண் போட்டித் தேர்வு பயிற்சி மையம்",
+    display_name_en="Saran Coaching Centre",
     tagline_ta="தேர்வு சேர்க்கை, கட்டண விவரங்கள் & இலவச மாதிரி வகுப்பு",
     tagline_en="Admissions, demo class booking & course fee inquiries",
     description="Student voice desk answering batch timings, scholarship eligibility, and scheduling free demo classroom seats.",
@@ -16,7 +16,7 @@ PACKAGE = SectorPackage(
     schedule_time_key="preferred_batch",
     demo_user={
         "username": "coaching_admin",
-        "email": "admissions@vetriacademy.edu.in",
+        "email": "admissions@sarancoaching.com",
         "full_name": "Prof. Vigneshwaran K (Academic Director)",
         "role": "owner",
     },
@@ -28,9 +28,9 @@ PACKAGE = SectorPackage(
             type="text",
             required=True,
             prompts=SlotPrompt(
-                ta="வணக்கம், வெற்றி பயிற்சி மையம்! மாணவரின் பெயரை கூறுங்கள்?",
-                tanglish="Vanakkam, Vetri Academy! Student peyar enna?",
-                en="Welcome to Vetri Academy! What is the student's name?"
+                ta="வணக்கம், சரண் பயிற்சி மையம்! மாணவரின் பெயரை கூறுங்கள்?",
+                tanglish="Vanakkam, Saran Coaching Centre! Student peyar enna?",
+                en="Welcome to Saran Coaching Centre! What is the student's name?"
             ),
             description="Name of the aspiring student"
         ),

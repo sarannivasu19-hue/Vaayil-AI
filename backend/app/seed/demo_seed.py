@@ -7,9 +7,11 @@ from app.models.alert import Alert
 from app.models.call_log import CallLog
 from app.auth.security import hash_password
 from app.sectors.registry import get_all_sector_packages
+from app.config import settings
 
 DEMO_PASSWORD_RAW = "vaayil123"
-ADMIN_PASSWORD_RAW = "admin@vaayil123"
+ADMIN_PASSWORD_RAW = getattr(settings, "DEFAULT_ADMIN_PASSWORD", "1906")
+ADMIN_USERNAME = getattr(settings, "DEFAULT_ADMIN_USERNAME", "Saran")
 
 
 def seed_demo_data(db: Session) -> None:
@@ -67,6 +69,8 @@ def seed_demo_data(db: Session) -> None:
             )
             db.add(user)
         else:
+            existing_user.email = user_info["email"]
+            existing_user.full_name = user_info["full_name"]
             if not existing_user.phone:
                 existing_user.phone = "+91 98409 12345"
             existing_user.is_active = True
@@ -90,12 +94,16 @@ def seed_demo_data(db: Session) -> None:
         db.add(system_sector)
         db.flush()
 
-    admin_user = db.query(User).filter(User.username == "admin").first()
+    # Find existing admin account by username or role
+    admin_user = db.query(User).filter(
+        (User.username.ilike(ADMIN_USERNAME)) | (User.username == "admin") | (User.role == "admin")
+    ).first()
+
     if not admin_user:
         admin_user = User(
-            username="admin",
+            username=ADMIN_USERNAME,
             email="admin@vaayil.ai",
-            full_name="Vaayil System Administrator",
+            full_name="Vaayil System Administrator (Saran)",
             phone="+91 98400 99999",
             hashed_password=admin_hashed_password,
             role="admin",
@@ -104,10 +112,14 @@ def seed_demo_data(db: Session) -> None:
         )
         db.add(admin_user)
     else:
+        # Safely update default credentials without duplicating account
+        admin_user.username = ADMIN_USERNAME
         admin_user.role = "admin"
         admin_user.is_active = True
         admin_user.email = "admin@vaayil.ai"
         admin_user.sector_id = "system"
+        admin_user.hashed_password = admin_hashed_password
+        admin_user.full_name = "Vaayil System Administrator (Saran)"
 
     # 3. Seed Clearly Labelled Development Sample Urgent Alerts & Linked Call Logs
     sample_alerts_data = [

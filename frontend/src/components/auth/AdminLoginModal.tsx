@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   AlertCircle,
   ArrowRight,
+  ArrowLeft,
   Terminal,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -29,7 +30,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   onOpenUserLogin,
 }) => {
   const { adminLogin } = useAuth();
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState('Saran');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -173,7 +174,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  placeholder="admin or admin@vaayil.ai"
+                  placeholder="Enter administrator username"
                   className="w-full pl-10 pr-3 py-2.5 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
                   style={{
                     background: 'rgba(16, 22, 38, 0.85)',
@@ -207,6 +208,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#7E8CA3] hover:text-white bg-transparent border-none cursor-pointer"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -218,30 +221,43 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 <ShieldCheck className="w-3.5 h-3.5 text-[#42D6A4]" />
                 RBAC Protected
               </span>
-              <span className="font-mono text-[#A58EFF]">Seed: admin@vaayil123</span>
+              <span className="text-[10px] text-slate-500 font-mono">
+                Cryptographically Audited
+              </span>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer border-none text-white shadow-lg transition-all"
-              style={{
-                background: 'linear-gradient(135deg, #8065FF 0%, #A58EFF 100%)',
-                boxShadow: '0 4px 20px rgba(128, 101, 255, 0.35)',
-              }}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Authenticating Administrator…</span>
-                </>
-              ) : (
-                <>
-                  <span>Authenticate as Admin</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="py-3 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-[#BAC7DF] transition-all"
+                title="Back to Hub"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back</span>
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer border-none text-white shadow-lg transition-all"
+                style={{
+                  background: 'linear-gradient(135deg, #8065FF 0%, #A58EFF 100%)',
+                  boxShadow: '0 4px 20px rgba(128, 101, 255, 0.35)',
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Authenticating Administrator…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Authenticate as Admin</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </form>
 
           {/* Switch to normal login */}

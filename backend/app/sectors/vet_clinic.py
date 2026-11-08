@@ -2,9 +2,9 @@ from app.sectors.base import SectorPackage, SlotDefinition, SlotPrompt, SampleBo
 
 PACKAGE = SectorPackage(
     id="vet_clinic",
-    name="Thiruvalluvar Cattle & Vet Clinic",
-    display_name_ta="திருவள்ளுவர் கால்நடை மருத்துவ மையம்",
-    display_name_en="Thiruvalluvar Cattle & Vet Care",
+    name="Government Veterinary Medical Centre",
+    display_name_ta="அரசு கால்நடை மருத்துவ மையம்",
+    display_name_en="Government Veterinary Medical Centre",
     tagline_ta="ஆடு, மாடு, வீட்டு செல்லப் பிராணிகள் சிகிச்சை முன்பதிவு",
     tagline_en="Livestock & pet care appointments, vaccinations and urgent care",
     description="Rural veterinary care voice assistant for cattle vaccination, emergency calving calls, and pet health visits.",
@@ -16,7 +16,7 @@ PACKAGE = SectorPackage(
     schedule_time_key="appointment_time",
     demo_user={
         "username": "vet_admin",
-        "email": "doctor@vetcare.in",
+        "email": "doctor@govtvetmedcentre.tn.gov.in",
         "full_name": "Dr. Murugan Velu (B.V.Sc)",
         "role": "owner",
     },
@@ -28,9 +28,9 @@ PACKAGE = SectorPackage(
             type="text",
             required=True,
             prompts=SlotPrompt(
-                ta="வணக்கம், உங்கள் பெயரை கூறுங்கள்?",
-                tanglish="Vanakkam, unga peyara sollunga?",
-                en="Welcome to Vet Care. What is the owner's name?"
+                ta="வணக்கம், அரசு கால்நடை மருத்துவ மையம். உங்கள் பெயரை கூறுங்கள்?",
+                tanglish="Vanakkam, Govt Vet Medical Centre. Unga peyara sollunga?",
+                en="Welcome to Government Veterinary Medical Centre. What is the owner's name?"
             ),
             description="Name of the livestock owner or pet parent"
         ),

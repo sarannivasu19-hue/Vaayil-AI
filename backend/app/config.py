@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
+    # Default Admin Credentials (configurable via environment variables)
+    DEFAULT_ADMIN_USERNAME: str = "Saran"
+    DEFAULT_ADMIN_PASSWORD: str = "1906"
+
     # Database
     DATABASE_URL: str = f"sqlite:///{(BACKEND_DIR / 'vaayil.db').resolve().as_posix()}"
 

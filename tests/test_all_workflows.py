@@ -107,7 +107,7 @@ print(f"  [PASS] Booking Created: Ref={created_booking['reference_number']} Stat
 # WORKFLOW 3: Admin Login -> Admin Dashboard -> User Mgmt & Telemetry
 # ------------------------------------------------------------------
 print("\n>>> WORKFLOW 3: Admin Portal Authentication & Management")
-admin_login = post("/auth/admin-login", {"username": "admin", "password": "admin@vaayil123"})
+admin_login = post("/auth/admin-login", {"username": "Saran", "password": "1906"})
 admin_token = admin_login["access_token"]
 assert admin_login["user"]["role"] == "admin"
 print(f"  [PASS] Platform Administrator Authenticated: {admin_login['user']['full_name']}")
@@ -170,7 +170,7 @@ print(f"  [PASS] Loaded Settings: Business={current_settings['business_name']}, 
 
 # Update a setting
 updated_settings_payload = {
-    "business_name": "Arul Primary Care Clinic (Tamil Nadu Super-Specialty)",
+    "business_name": "Saran Clinic (Tamil Nadu Super-Specialty)",
     "contact_phone": "+91 94441 98765",
     "contact_email": "care@arulclinic.com",
     "open_time": "08:30",
@@ -199,11 +199,11 @@ print(f"  [PASS] Verified Persistence: Opening={reloaded_settings['open_time']},
 print("\n>>> WORKFLOW 6: Verification Across All Six Sectors")
 SECTORS = [
     ("panchayat_health", "panchayat_admin", "health.desk@panchayat.tn.gov.in"),
-    ("clinic", "clinic_admin", "appointments@arulclinic.com"),
-    ("vet_clinic", "vet_admin", "doctor@vetcare.in"),
-    ("hotel_lodge", "hotel_admin", "reservations@maruthaminn.com"),
-    ("restaurant", "restaurant_admin", "orders@meenakshibhavan.com"),
-    ("coaching", "coaching_admin", "admissions@vetriacademy.edu.in"),
+    ("clinic", "clinic_admin", "appointments@saranclinic.com"),
+    ("vet_clinic", "vet_admin", "doctor@govtvetmedcentre.tn.gov.in"),
+    ("hotel_lodge", "hotel_admin", "reservations@saranhotel.com"),
+    ("restaurant", "restaurant_admin", "orders@saranrestaurant.com"),
+    ("coaching", "coaching_admin", "admissions@sarancoaching.com"),
 ]
 
 for sec_id, user_id, email in SECTORS:

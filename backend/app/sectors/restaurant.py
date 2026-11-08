@@ -2,9 +2,9 @@ from app.sectors.base import SectorPackage, SlotDefinition, SlotPrompt, SampleBo
 
 PACKAGE = SectorPackage(
     id="restaurant",
-    name="Madurai Meenakshi Bhavan & Catering",
-    display_name_ta="மதுரை மீனாட்சி பவன் & கேட்டரிங்",
-    display_name_en="Madurai Meenakshi Bhavan & Catering",
+    name="Saran Restaurant",
+    display_name_ta="சரண் உணவகம்",
+    display_name_en="Saran Restaurant",
     tagline_ta="மேஜை முன்பதிவு மற்றும் விஷேசங்களுக்கான மொத்த உணவு ஆர்டர்",
     tagline_en="Table dining reservations & bulk event catering orders",
     description="Voice-enabled restaurant reservation and catering order line for weddings, birthday banquets, and family dinners.",
@@ -16,7 +16,7 @@ PACKAGE = SectorPackage(
     schedule_time_key="event_time",
     demo_user={
         "username": "restaurant_admin",
-        "email": "orders@meenakshibhavan.com",
+        "email": "orders@saranrestaurant.com",
         "full_name": "Chef Sundaram Chettiar",
         "role": "owner",
     },
@@ -28,9 +28,9 @@ PACKAGE = SectorPackage(
             type="text",
             required=True,
             prompts=SlotPrompt(
-                ta="வணக்கம், மீனாட்சி பவன்! உங்கள் பெயரை கூறுங்கள்?",
-                tanglish="Vanakkam, Meenakshi Bhavan! Unga peyar enna?",
-                en="Welcome to Meenakshi Bhavan! May I have your name?"
+                ta="வணக்கம், சரண் உணவகம்! உங்கள் பெயரை கூறுங்கள்?",
+                tanglish="Vanakkam, Saran Restaurant! Unga peyar enna?",
+                en="Welcome to Saran Restaurant! May I have your name?"
             ),
             description="Contact person name"
         ),

@@ -57,14 +57,14 @@ export const REGISTERED_BUSINESSES_AND_SERVICES: BusinessRegistryEntry[] = [
   },
   {
     sectorId: 'vet_clinic',
-    nameEn: 'Thiruvalluvar Cattle & Vet Care',
-    nameTa: 'திருவள்ளுவர் கால்நடை மருத்துவ மையம்',
+    nameEn: 'Government Veterinary Medical Centre',
+    nameTa: 'அரசு கால்நடை மருத்துவ மையம்',
     taglineEn: 'Livestock & pet care appointments, vaccinations and urgent care',
     taglineTa: 'ஆடு, மாடு, வீட்டு செல்லப் பிராணிகள் சிகிச்சை முன்பதிவு',
     // Operates in agricultural, dairy & livestock heartlands
     districts: ['salem', 'erode', 'tiruppur', 'namakkal', 'thanjavur', 'dindigul', 'dharmapuri', 'villupuram', 'tiruvannamalai'],
     phone: '+91 97890 12345',
-    email: 'doctor@vetcare.in',
+    email: 'doctor@govtvetmedcentre.tn.gov.in',
     services: [
       { id: 'dairy_cattle', nameEn: 'Cow & Dairy Cattle Care', nameTa: 'கறவை மாடு பராமரிப்பு', slotField: 'animal_type', description: 'Milch cow health checkups, mastitis control and calving support' },
       { id: 'goat_sheep', nameEn: 'Goat & Sheep Herd Health', nameTa: 'ஆடு & செம்மறி ஆடு சிகிச்சை', slotField: 'animal_type', description: 'Deworming, contagious ecthyma treatment and flock health' },
@@ -95,14 +95,14 @@ export const REGISTERED_BUSINESSES_AND_SERVICES: BusinessRegistryEntry[] = [
   },
   {
     sectorId: 'restaurant',
-    nameEn: 'Madurai Meenakshi Bhavan & Catering',
-    nameTa: 'மதுரை மீனாட்சி பவன் & கேட்டரிங்',
+    nameEn: 'Saran Restaurant',
+    nameTa: 'சரண் உணவகம்',
     taglineEn: 'Table dining reservations & bulk event catering orders',
     taglineTa: 'மேஜை முன்பதிவு மற்றும் விஷேசங்களுக்கான மொத்த உணவு ஆர்டர்',
     // Authentic South Indian food epicenters and dining circuits
     districts: ['madurai', 'chennai', 'coimbatore', 'tiruchirappalli', 'dindigul', 'virudhunagar', 'theni', 'sivaganga'],
     phone: '+91 98765 43210',
-    email: 'orders@meenakshibhavan.com',
+    email: 'orders@saranrestaurant.com',
     services: [
       { id: 'dining_table', nameEn: 'Table Dining Reservation', nameTa: 'மேஜை முன்பதிவு (Table Booking)', slotField: 'service_type', description: 'Reserve priority dining table for family dinners and special meals' },
       { id: 'bulk_catering', nameEn: 'Bulk Event Catering', nameTa: 'விசேஷங்களுக்கான மொத்த உணவு ஆர்டர்', slotField: 'service_type', description: 'Traditional banana-leaf catering for weddings, betrothals and banquets' },
@@ -110,14 +110,14 @@ export const REGISTERED_BUSINESSES_AND_SERVICES: BusinessRegistryEntry[] = [
   },
   {
     sectorId: 'coaching',
-    nameEn: 'Vetri TNPSC & NEET Academy',
-    nameTa: 'வெற்றி போட்டித் தேர்வு பயிற்சி மையம்',
+    nameEn: 'Saran Coaching Centre',
+    nameTa: 'சரண் போட்டித் தேர்வு பயிற்சி மையம்',
     taglineEn: 'Admissions, demo class booking & course fee inquiries',
     taglineTa: 'தேர்வு சேர்க்கை, கட்டண விவரங்கள் & இலவச மாதிரி வகுப்பு',
     // Education centers across competitive exam test-taking regions
     districts: ['chennai', 'coimbatore', 'madurai', 'tiruchirappalli', 'salem', 'tirunelveli', 'vellore', 'erode', 'thanjavur'],
     phone: '+91 90123 45678',
-    email: 'admissions@vetriacademy.edu.in',
+    email: 'admissions@sarancoaching.com',
     services: [
       { id: 'tnpsc_grp12', nameEn: 'TNPSC Group 1 & 2 Coaching', nameTa: 'குரூப் 1 & 2 பயிற்சி', slotField: 'target_exam', description: 'Comprehensive GS, Tamil eligibility & interview mentorship' },
       { id: 'tnpsc_grp4', nameEn: 'TNPSC Group 4 & VAO', nameTa: 'குரூப் 4 & விஏஓ பயிற்சி', slotField: 'target_exam', description: 'Direct foundation batch with daily question paper workouts' },
