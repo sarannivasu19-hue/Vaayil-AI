@@ -17,6 +17,7 @@ from app.models.call_session import CallSession
 from app.routes.auth import get_current_user
 from app.sectors.registry import get_sector_package
 from app.conversation.engine import ConversationEngine, EngineTurnResult
+from app.conversation.parsers.phone_parser import mask_phone
 
 logger = logging.getLogger("vaayil-ai.agent")
 
@@ -106,9 +107,11 @@ def handle_agent_turn(
     call_sess.history_json = json.dumps(history, ensure_ascii=False)
     call_sess.language_mode = payload.language_mode or call_sess.language_mode
 
-    # If phone was extracted, store in session
+    # If phone was confirmed, store in session with masked logging
     if "phone" in turn_result.slots:
-        call_sess.caller_phone = str(turn_result.slots["phone"])
+        phone_str = str(turn_result.slots["phone"])
+        call_sess.caller_phone = phone_str
+        logger.info("Session %s: Verified phone stored: %s", session_id, mask_phone(phone_str))
 
     db.commit()
 

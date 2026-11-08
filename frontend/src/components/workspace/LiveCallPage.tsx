@@ -179,11 +179,25 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
     setMicError(null); setErrorMessage(null); setOrbState('listening'); chunksRef.current = [];
     if (audioPlayerRef.current) audioPlayerRef.current.pause();
     let stream: MediaStream;
-    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-    catch (err) {
-      const e = err as DOMException;
-      setMicError(e.name === 'NotAllowedError' ? 'Microphone permission denied.' : `Mic error: ${e.message}`);
-      setOrbState('error'); return;
+    try {
+      // Hardware-level audio enhancement: echo cancellation, noise suppression, AGC for mobile and laptop mics
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+          sampleRate: 16000,
+        }
+      });
+    } catch {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        const e = err as DOMException;
+        setMicError(e.name === 'NotAllowedError' ? 'Microphone permission denied.' : `Mic error: ${e.message}`);
+        setOrbState('error'); return;
+      }
     }
     streamRef.current = stream;
     try {
@@ -201,7 +215,23 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
       };
       updateVolume();
     } catch { /* Web Audio not supported */ }
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
+
+    // Cross-browser & device MIME detection (Android Chrome, iOS Safari, desktop)
+    let mimeType = '';
+    const preferredTypes = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/mp4',
+      'audio/aac',
+    ];
+    for (const t of preferredTypes) {
+      if (MediaRecorder.isTypeSupported(t)) {
+        mimeType = t;
+        break;
+      }
+    }
+
     const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
     mediaRecorderRef.current = recorder;
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
@@ -211,7 +241,9 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
       stream.getTracks().forEach(t => t.stop());
       if (timerRef.current) clearInterval(timerRef.current);
       const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-      await sendToPrismaAndEngine(blob, 'voice.webm');
+      const ext = (recorder.mimeType || '').includes('mp4') ? 'voice.mp4'
+        : (recorder.mimeType || '').includes('ogg') ? 'voice.ogg' : 'voice.webm';
+      await sendToPrismaAndEngine(blob, ext);
     };
     recorder.start(250); setTimerSecs(0);
     timerRef.current = setInterval(() => {

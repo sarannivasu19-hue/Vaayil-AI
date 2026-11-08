@@ -182,6 +182,7 @@ def convert_webm_to_wav(input_path: str, output_path: str) -> None:
                 "-vn",
                 "-ac", "1",
                 "-ar", "16000",
+                "-af", "highpass=f=80,lowpass=f=7500,volume=1.2",
                 output_path,
             ]
             proc = subprocess.run(
