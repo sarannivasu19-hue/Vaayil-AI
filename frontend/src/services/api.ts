@@ -19,7 +19,10 @@ import type {
   AdminUser,
 } from '../types';
 
-const API_BASE = '/api';
+const rawApiBase = (import.meta as any).env?.VITE_API_BASE_URL;
+const API_BASE = rawApiBase
+  ? (rawApiBase.endsWith('/api') ? rawApiBase : `${rawApiBase.replace(/\/+$/, '')}/api`)
+  : '/api';
 
 export class ApiError extends Error {
   status: number;
