@@ -393,6 +393,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ sectorDetail, onNa
           {/* Right Action Controls */}
           <div className="flex flex-wrap items-center gap-2 self-start lg:self-center shrink-0">
             <button
+              onClick={() => onNavigateTab('smart-service')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-lg hover:scale-105 active:scale-95 cursor-pointer border border-cyan-400/40 bg-cyan-500/20 hover:bg-cyan-500/30"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <span>Smart Service Center</span>
+            </button>
+
+            <button
               onClick={() => onNavigateTab('live-call')}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-950 transition-all shadow-lg hover:shadow-cyan-500/20 hover:scale-105 active:scale-95 cursor-pointer border-none"
               style={{ backgroundColor: accent }}

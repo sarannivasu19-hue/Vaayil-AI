@@ -161,10 +161,11 @@ export const api = {
 
   // ==================== BOOKINGS API ====================
 
-  async getBookings(search?: string, statusFilter?: string): Promise<Booking[]> {
+  async getBookings(search?: string, statusFilter?: string, district?: string): Promise<Booking[]> {
     const params = new URLSearchParams();
     if (search && search.trim()) params.append('search', search.trim());
     if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+    if (district && district !== 'all') params.append('district', district);
 
     const url = `${API_BASE}/bookings${params.toString() ? `?${params.toString()}` : ''}`;
     const res = await fetch(url, {
@@ -251,6 +252,67 @@ export const api = {
     return res.json();
   },
 
+  async submitSmartService(payload: {
+    sector_id: string;
+    service_category: string;
+    service_name: string;
+    customer_name: string;
+    phone: string;
+    email?: string;
+    details?: Record<string, any>;
+    notes?: string;
+    submission_mode?: string;
+    session_id?: string;
+    language?: string;
+    client_token?: string;
+  }): Promise<{
+    success: boolean;
+    reference_number: string;
+    booking_id: number;
+    status: string;
+    customer_name: string;
+    phone: string;
+    service_category: string;
+    service_name: string;
+    details: Record<string, any>;
+    notes?: string;
+    confirmation_message: string;
+    confirmation_speech_text: string;
+    created_at: string;
+  }> {
+    const res = await fetch(`${API_BASE}/bookings/smart-service`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to submit smart service request' }));
+      throw new ApiError(err.detail || 'Failed to submit smart service request', res.status);
+    }
+    return res.json();
+  },
+
+  async trackBookings(query: string, sectorId?: string): Promise<Booking[]> {
+    const params = new URLSearchParams({ query: query.trim() });
+    if (sectorId) params.append('sector_id', sectorId);
+
+    const res = await fetch(`${API_BASE}/bookings/track?${params.toString()}`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to track bookings' }));
+      throw new ApiError(err.detail || 'Failed to track bookings', res.status);
+    }
+    return res.json();
+  },
+
   // ==================== ANALYTICS & DASHBOARD (Phase 7) ====================
 
   async getAnalyticsSummary(startDate?: string, endDate?: string): Promise<DashboardSummary> {
@@ -311,6 +373,21 @@ export const api = {
     });
     if (!res.ok) {
       throw new ApiError('Failed to update settings', res.status);
+    }
+    return res.json();
+  },
+
+  async updateLanguagePreference(languageMode: string): Promise<{ status: string; language_mode: string }> {
+    const res = await fetch(`${API_BASE}/settings/language`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ language_mode: languageMode }),
+    });
+    if (!res.ok) {
+      throw new ApiError('Failed to update language preference', res.status);
     }
     return res.json();
   },
@@ -661,6 +738,146 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Failed to update user status' }));
       throw new ApiError(err.detail || 'Failed to toggle status', res.status);
+    }
+    return res.json();
+  },
+
+  async normalizePhone(text: string): Promise<{
+    phone: string | null;
+    raw_digits: string;
+    digit_count: number;
+    is_valid: boolean;
+    status: string;
+    message_en: string;
+    message_ta: string;
+    message_tanglish: string;
+  }> {
+    const res = await fetch(`${API_BASE}/voice/normalize-phone`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to normalize phone' }));
+      throw new ApiError(err.detail || 'Failed to normalize phone', res.status);
+    }
+    return res.json();
+  },
+
+  async switchSector(sectorId: string): Promise<AuthResponse> {
+    const res = await fetch(`${API_BASE}/auth/switch-sector`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ sector_id: sectorId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to switch workspace' }));
+      throw new ApiError(err.detail || 'Failed to switch workspace', res.status);
+    }
+    const data = await res.json();
+    if (data.access_token) {
+      localStorage.setItem('vaayil_token', data.access_token);
+    }
+    return data;
+  },
+
+  async getGmailStatus(): Promise<{
+    is_connected: boolean;
+    email: string | null;
+    connected_at: string | null;
+    updated_at: string | null;
+    token_status: string;
+    scopes: string[];
+    workspaces_enabled: string[];
+    last_error: string | null;
+  }> {
+    const res = await fetch(`${API_BASE}/gmail/status`, {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to fetch Gmail status' }));
+      throw new ApiError(err.detail || 'Failed to fetch Gmail status', res.status);
+    }
+    return res.json();
+  },
+
+  async getGmailAuthUrl(redirectUri?: string): Promise<{ auth_url: string; client_configured: boolean; scope: string }> {
+    const url = redirectUri ? `${API_BASE}/gmail/auth-url?redirect_uri=${encodeURIComponent(redirectUri)}` : `${API_BASE}/gmail/auth-url`;
+    const res = await fetch(url, {
+      headers: { ...getAuthHeader() },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to get auth URL' }));
+      throw new ApiError(err.detail || 'Failed to get auth URL', res.status);
+    }
+    return res.json();
+  },
+
+  async connectGmail(email: string, authCode?: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/gmail/connect`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ email, auth_code: authCode }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to connect Gmail' }));
+      throw new ApiError(err.detail || 'Failed to connect Gmail', res.status);
+    }
+    return res.json();
+  },
+
+  async disconnectGmail(email?: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/gmail/disconnect`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to disconnect Gmail' }));
+      throw new ApiError(err.detail || 'Failed to disconnect Gmail', res.status);
+    }
+    return res.json();
+  },
+
+  async refreshGmailToken(): Promise<any> {
+    const res = await fetch(`${API_BASE}/gmail/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to refresh token' }));
+      throw new ApiError(err.detail || 'Failed to refresh token', res.status);
+    }
+    return res.json();
+  },
+
+  async sendTestGmailEmail(sectorId: string, recipientEmail?: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/gmail/send-test-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ sector_id: sectorId, recipient_email: recipientEmail }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to send test email' }));
+      throw new ApiError(err.detail || 'Failed to send test email', res.status);
     }
     return res.json();
   },

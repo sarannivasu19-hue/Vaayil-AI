@@ -15,7 +15,7 @@ export const TN_DISTRICTS: TNDistrict[] = [
   { id: 'erode',           en: 'Erode',            ta: 'ஈரோடு' },
   { id: 'kallakurichi',    en: 'Kallakurichi',     ta: 'கள்ளக்குறிச்சி' },
   { id: 'kancheepuram',    en: 'Kancheepuram',     ta: 'காஞ்சிபுரம்' },
-  { id: 'kanyakumari',     en: 'Kanyakumari',      ta: 'கன்னியாகுமரி' },
+  { id: 'kanyakumari',     en: 'Kanniyakumari',    ta: 'கன்னியாகுமரி' },
   { id: 'karur',           en: 'Karur',            ta: 'கரூர்' },
   { id: 'krishnagiri',     en: 'Krishnagiri',      ta: 'கிருஷ்ணகிரி' },
   { id: 'madurai',         en: 'Madurai',          ta: 'மதுரை' },
@@ -35,14 +35,14 @@ export const TN_DISTRICTS: TNDistrict[] = [
   { id: 'thoothukkudi',    en: 'Thoothukudi',      ta: 'தூத்துக்குடி' },
   { id: 'tiruchirappalli', en: 'Tiruchirappalli',  ta: 'திருச்சிராப்பள்ளி' },
   { id: 'tirunelveli',     en: 'Tirunelveli',      ta: 'திருநெல்வேலி' },
+  { id: 'tirupattur',      en: 'Tirupathur',       ta: 'திருப்பத்தூர்' },
   { id: 'tiruppur',        en: 'Tiruppur',         ta: 'திருப்பூர்' },
-  { id: 'tirupattur',      en: 'Tirupattur',       ta: 'திருப்பத்தூர்' },
+  { id: 'tiruvallur',      en: 'Tiruvallur',       ta: 'திருவள்ளூர்' },
   { id: 'tiruvannamalai',  en: 'Tiruvannamalai',   ta: 'திருவண்ணாமலை' },
   { id: 'tiruvarur',       en: 'Tiruvarur',        ta: 'திருவாரூர்' },
   { id: 'vellore',         en: 'Vellore',          ta: 'வேலூர்' },
-  { id: 'villupuram',      en: 'Villupuram',       ta: 'விழுப்புரம்' },
+  { id: 'villupuram',      en: 'Viluppuram',       ta: 'விழுப்புரம்' },
   { id: 'virudhunagar',    en: 'Virudhunagar',     ta: 'விருதுநகர்' },
-  { id: 'tenkasi',         en: 'Tenkasi',          ta: 'தென்காசி' },
 ];
 
 // Remove duplicates by id

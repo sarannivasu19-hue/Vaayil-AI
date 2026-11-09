@@ -1,5 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { LanguageSelector } from '../ui/LanguageSelector';
 import {
   CheckCircle2,
   AlertCircle,
@@ -55,6 +57,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAdminDashboard,
 }) => {
   const { user, isAdmin, logout, health } = useAuth();
+  const { t } = useLanguage();
   const isHealthy = health?.status === 'healthy';
 
   return (
@@ -75,10 +78,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="text-sm font-bold tracking-wide text-[#E8EDF9] group-hover:text-[#A58EFF] transition-colors duration-200"
               style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
             >
-              VAAYIL AI
+              {t('common.brand')}
             </span>
             <span className="text-[10px] text-[#9AA7BE] hidden sm:block mt-0.5">
-              Every business. One voice at the door.
+              {t('common.tagline')}
             </span>
           </div>
         </button>
@@ -101,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-[#9AA7BE]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
               Gnani&nbsp;
               <span className={isHealthy ? 'text-[#42D6A4]' : 'text-[#FFBF69]'}>
-                {isHealthy ? 'Online' : 'Connecting'}
+                {isHealthy ? t('common.online') : t('common.loading')}
               </span>
             </span>
           </div>
@@ -146,6 +149,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
+          {/* Active Global Language Switcher */}
+          <LanguageSelector variant="compact" />
+
           {/* Authentication Action Buttons */}
           {!user ? (
             <div className="flex items-center gap-2">
@@ -156,8 +162,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#32D8E8]/10 hover:bg-[#32D8E8]/20 text-[#32D8E8] border border-[#32D8E8]/30 transition-all cursor-pointer"
               >
                 <UserIcon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">User Sign In / Register</span>
-                <span className="sm:hidden">Sign In</span>
+                <span className="hidden sm:inline">{t('common.login')} / {t('common.register')}</span>
+                <span className="sm:hidden">{t('common.login')}</span>
               </button>
 
               {/* Admin Portal button */}
@@ -167,7 +173,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#8065FF]/15 hover:bg-[#8065FF]/25 text-[#A58EFF] border border-[#8065FF]/35 transition-all cursor-pointer"
               >
                 <Shield className="w-3.5 h-3.5" />
-                <span>Admin</span>
+                <span>{t('common.admin')}</span>
               </button>
             </div>
           ) : (
@@ -179,7 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#8065FF]/20 text-[#A58EFF] border border-[#8065FF]/40 cursor-pointer"
                 >
                   <Server className="w-3.5 h-3.5" />
-                  <span>Admin Hub</span>
+                  <span>{t('admin.title')}</span>
                 </button>
               ) : (
                 <span className="text-xs text-[#9AA7BE] font-mono hidden sm:inline">
@@ -192,37 +198,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#FF647C] bg-[#FF647C]/10 border border-[#FF647C]/30 hover:bg-[#FF647C]/20 transition-all cursor-pointer"
               >
                 <Power className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Sign Out</span>
+                <span className="hidden sm:inline">{t('common.logout')}</span>
               </button>
             </div>
           )}
-
-          {/* Language hint chips */}
-          <div
-            className="hidden md:flex items-center gap-1.5 text-[10px] text-[#9AA7BE]"
-            style={{ fontFamily: 'Noto Sans Tamil, sans-serif' }}
-          >
-            <span
-              className="px-2 py-1 rounded-full"
-              style={{ background: 'rgba(16,22,38,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
-            >
-              தமிழ்
-            </span>
-            <span className="text-[#4A5568]">|</span>
-            <span
-              className="px-2 py-1 rounded-full"
-              style={{ background: 'rgba(16,22,38,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
-            >
-              Tanglish
-            </span>
-            <span className="text-[#4A5568]">|</span>
-            <span
-              className="px-2 py-1 rounded-full"
-              style={{ background: 'rgba(16,22,38,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
-            >
-              English
-            </span>
-          </div>
         </div>
       </div>
     </header>

@@ -5,7 +5,6 @@ import {
   Lock,
   Mail,
   User as UserIcon,
-  Phone,
   Eye,
   EyeOff,
   Loader2,
@@ -13,7 +12,6 @@ import {
   AlertCircle,
   Shield,
   HelpCircle,
-  Building2,
   ArrowRight,
 } from 'lucide-react';
 import type { Sector } from '../../types';
@@ -22,7 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 interface UserAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  sectors: Sector[];
+  sectors?: Sector[];
   initialSector?: Sector | null;
   onSuccess: () => void;
   onOpenAdminLogin: () => void;
@@ -31,8 +29,8 @@ interface UserAuthModalProps {
 export const UserAuthModal: React.FC<UserAuthModalProps> = ({
   isOpen,
   onClose,
-  sectors,
-  initialSector,
+  sectors: _sectors,
+  initialSector: _initialSector,
   onSuccess,
   onOpenAdminLogin,
 }) => {
@@ -45,14 +43,11 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
   const [rememberMe, setRememberMe] = useState(true);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
-  // Register form state
+  // Register form state (One Gmail = One User ID = Access to All Six Workspaces)
   const [fullName, setFullName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
-  const [registerPhone, setRegisterPhone] = useState('');
-  const [selectedSectorId, setSelectedSectorId] = useState(initialSector?.id || (sectors[0]?.id || 'clinic'));
   const [registerPassword, setRegisterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   // Status state
@@ -69,7 +64,7 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
     setSuccessMessage(null);
 
     if (!loginIdentifier.trim() || !loginPassword) {
-      setErrorMessage('Please enter both username/email and password.');
+      setErrorMessage('Please enter both your Gmail address and password.');
       return;
     }
 
@@ -99,14 +94,10 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
       setErrorMessage('Full name must be at least 2 characters long.');
       return;
     }
+    const cleanEmail = registerEmail.trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(registerEmail.trim())) {
-      setErrorMessage('Please enter a valid email address.');
-      return;
-    }
-    const cleanPhone = registerPhone.replace(/[^\d]/g, '');
-    if (cleanPhone.length < 10) {
-      setErrorMessage('Please enter a valid 10-digit mobile number.');
+    if (!emailRegex.test(cleanEmail)) {
+      setErrorMessage('Please enter a valid Gmail address (e.g. name@gmail.com).');
       return;
     }
     if (registerPassword.length < 8) {
@@ -121,34 +112,28 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
       setErrorMessage('Passwords do not match. Please verify.');
       return;
     }
-    if (!termsAccepted) {
-      setErrorMessage('You must accept the terms of service and privacy policy.');
-      return;
-    }
 
     setIsSubmitting(true);
     try {
       const res = await registerUser({
         full_name: fullName.trim(),
-        email: registerEmail.trim(),
-        phone: cleanPhone,
+        email: cleanEmail,
         password: registerPassword,
         confirm_password: confirmPassword,
-        sector_id: selectedSectorId,
-        terms_accepted: termsAccepted,
       });
 
-      setSuccessMessage(res.message);
+      setSuccessMessage(res.message || 'Account created successfully! Switching to sign in…');
       // Pre-fill login with registered credentials
-      setLoginIdentifier(registerEmail.trim());
+      setLoginIdentifier(cleanEmail);
       setLoginPassword(registerPassword);
-      // Switch to login tab after 1.5 seconds
+      // Switch to login tab after brief pause
       setTimeout(() => {
         setMode('login');
-        setSuccessMessage('Registration confirmed! Please sign in with your credentials.');
-      }, 1400);
+        setSuccessMessage('Account registered! Please sign in to access all six business workspaces.');
+      }, 1200);
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Registration failed.');
+      const msg = err instanceof Error ? err.message : 'Registration failed.';
+      setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -192,7 +177,7 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
               </span>
             </div>
             <h2 className="text-xl font-bold text-[#E8EDF9] mt-1 font-heading">
-              {mode === 'login' ? 'வணக்கம் · Sign In' : 'புதிய கணக்கு · Register'}
+              {mode === 'login' ? 'வணக்கம் · User Sign In' : 'புதிய கணக்கு · Create Account'}
             </h2>
           </div>
 
@@ -218,7 +203,7 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
                 : 'bg-white/5 border-white/10 text-[#9AA7BE] hover:text-[#E8EDF9]'
             }`}
           >
-            Existing User Sign In
+            User Sign In
           </button>
           <button
             type="button"
@@ -232,7 +217,7 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
                 : 'bg-white/5 border-white/10 text-[#9AA7BE] hover:text-[#E8EDF9]'
             }`}
           >
-            Create Business Account
+            Create Account
           </button>
         </div>
 
@@ -253,7 +238,22 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
                 }}
               >
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#FF647C]" />
-                <span className="leading-relaxed">{errorMessage}</span>
+                <div className="flex-1">
+                  <p className="leading-relaxed">{errorMessage}</p>
+                  {errorMessage.toLowerCase().includes('already registered') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('login');
+                        setLoginIdentifier(registerEmail);
+                        setErrorMessage(null);
+                      }}
+                      className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-colors border-none cursor-pointer"
+                    >
+                      <span>Log In Now →</span>
+                    </button>
+                  )}
+                </div>
               </motion.div>
             )}
 
@@ -280,18 +280,18 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#9AA7BE] mb-1 font-mono">
-                  Username or Email Address
+                  Gmail Address or Username
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#7E8CA3] pointer-events-none">
-                    <UserIcon className="w-4 h-4" />
+                    <Mail className="w-4 h-4" />
                   </span>
                   <input
                     type="text"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     required
-                    placeholder="e.g. appointments@saranclinic.com or clinic_admin"
+                    placeholder="e.g. sarannivasusenthil@gmail.com"
                     className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
                     style={{
                       background: 'rgba(16, 22, 38, 0.85)',
@@ -375,8 +375,23 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
               </button>
             </form>
           ) : (
-            /* ==================== REGISTER MODE ==================== */
-            <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+            /* ==================== REGISTER MODE: ONE GMAIL = ACCESS TO ALL 6 WORKSPACES ==================== */
+            <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              <div
+                className="p-3 rounded-xl border text-xs"
+                style={{
+                  background: 'rgba(128,101,255,0.08)',
+                  borderColor: 'rgba(128,101,255,0.25)',
+                  color: '#C4B5FD',
+                }}
+              >
+                <span className="font-semibold text-white">One Account · All Six Workspaces:</span>
+                <p className="mt-0.5 text-[#9AA7BE] text-[11px] leading-relaxed">
+                  Register once with your Gmail to instantly access Panchayat, Saran Clinic, Vet Centre, Saran Hotel, Saran Restaurant, and Coaching Centre.
+                </p>
+              </div>
+
+              {/* 1. Full Name */}
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#9AA7BE] mb-1 font-mono">
                   Full Name
@@ -390,8 +405,8 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
-                    placeholder="e.g. Dr. Arul Murugan"
-                    className="w-full pl-9 pr-3 py-2 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
+                    placeholder="e.g. Saran Nivasu"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
                     style={{
                       background: 'rgba(16, 22, 38, 0.85)',
                       border: '1px solid rgba(255,255,255,0.12)',
@@ -400,83 +415,34 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#9AA7BE] mb-1 font-mono">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#7E8CA3] pointer-events-none">
-                      <Mail className="w-4 h-4" />
-                    </span>
-                    <input
-                      type="email"
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      required
-                      placeholder="name@business.com"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
-                      style={{
-                        background: 'rgba(16, 22, 38, 0.85)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#9AA7BE] mb-1 font-mono">
-                    Mobile Phone
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#7E8CA3] pointer-events-none">
-                      <Phone className="w-4 h-4" />
-                    </span>
-                    <input
-                      type="tel"
-                      value={registerPhone}
-                      onChange={(e) => setRegisterPhone(e.target.value)}
-                      required
-                      placeholder="98401 23456"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
-                      style={{
-                        background: 'rgba(16, 22, 38, 0.85)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
+              {/* 2. Gmail Address */}
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#9AA7BE] mb-1 font-mono">
-                  Select Business Sector
+                  Gmail Address
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#7E8CA3] pointer-events-none">
-                    <Building2 className="w-4 h-4" />
+                    <Mail className="w-4 h-4" />
                   </span>
-                  <select
-                    value={selectedSectorId}
-                    onChange={(e) => setSelectedSectorId(e.target.value)}
+                  <input
+                    type="email"
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
                     required
-                    className="w-full pl-9 pr-3 py-2 rounded-xl text-sm text-[#E8EDF9] outline-none cursor-pointer"
+                    placeholder="e.g. yourname@gmail.com"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
                     style={{
                       background: 'rgba(16, 22, 38, 0.85)',
                       border: '1px solid rgba(255,255,255,0.12)',
                     }}
-                  >
-                    {sectors
-                      .filter((s) => s.id !== 'system')
-                      .map((sec) => (
-                        <option key={sec.id} value={sec.id} className="bg-[#101626] text-white">
-                          {sec.name} ({sec.display_name_ta})
-                        </option>
-                      ))}
-                  </select>
+                  />
                 </div>
+                <span className="text-[10px] text-[#7E8CA3] mt-1 block">
+                  This Gmail will be your global login for all six business workspaces.
+                </span>
               </div>
 
+              {/* 3. Password & 4. Confirm Password */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#9AA7BE] mb-1 font-mono">
@@ -492,7 +458,7 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
                       onChange={(e) => setRegisterPassword(e.target.value)}
                       required
                       placeholder="••••••••"
-                      className="w-full pl-9 pr-9 py-2 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
+                      className="w-full pl-9 pr-9 py-2.5 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
                       style={{
                         background: 'rgba(16, 22, 38, 0.85)',
                         border: '1px solid rgba(255,255,255,0.12)',
@@ -522,7 +488,7 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       placeholder="••••••••"
-                      className="w-full pl-9 pr-3 py-2 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm text-[#E8EDF9] placeholder-[#59667D] outline-none"
                       style={{
                         background: 'rgba(16, 22, 38, 0.85)',
                         border: '1px solid rgba(255,255,255,0.12)',
@@ -532,21 +498,25 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    required
-                    className="mt-0.5 rounded border-white/20 text-[#8065FF] focus:ring-0 cursor-pointer"
-                  />
-                  <span className="text-xs text-[#9AA7BE] leading-relaxed">
-                    I agree to the Vaayil AI Terms of Service, Voice Processing Policy, and understand voice triage alerts are keyword-driven assistance tools.
-                  </span>
-                </label>
-              </div>
+              {/* Quick switch to Login if already registered */}
+              {errorMessage && errorMessage.includes('already registered') && (
+                <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-xs text-cyan-300 flex items-center justify-between">
+                  <span>Already have an account with this Gmail?</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setLoginIdentifier(registerEmail.trim());
+                      setErrorMessage(null);
+                    }}
+                    className="font-bold underline hover:text-white bg-transparent border-none cursor-pointer text-cyan-200"
+                  >
+                    Log In Now →
+                  </button>
+                </div>
+              )}
 
+              {/* 5. Create Account Button */}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -558,12 +528,12 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Registering Account…</span>
+                    <span>Creating Account…</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Complete Registration</span>
+                    <span>Create Account (All 6 Workspaces)</span>
                   </>
                 )}
               </button>

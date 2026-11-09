@@ -38,6 +38,7 @@ from app.config import settings
 from app.database import get_db
 from app.routes.auth import get_current_user
 from app.models import User
+from app.conversation.parsers.phone_parser import analyze_phone, parse_phone
 
 logger = logging.getLogger("vaayil-ai.voice")
 
@@ -125,6 +126,23 @@ class TranscribeResponse(BaseModel):
     preprocessing: str | None = None
     # Whether raw audio was saved (settings-dependent)
     audio_stored: bool = False
+    phone_extracted: str | None = None
+    phone_analysis: dict | None = None
+
+
+class PhoneNormalizeRequest(BaseModel):
+    text: str
+
+
+class PhoneNormalizeResponse(BaseModel):
+    phone: str | None
+    raw_digits: str
+    digit_count: int
+    is_valid: bool
+    status: str
+    message_en: str
+    message_ta: str
+    message_tanglish: str
 
 
 # ---------------------------------------------------------------------------
@@ -637,6 +655,8 @@ async def transcribe_audio(
             current_user.username, current_user.sector_id, language_code, len(transcript)
         )
 
+        phone_info = analyze_phone(transcript) if transcript else None
+
         return TranscribeResponse(
             success=True,
             transcript=transcript,
@@ -646,6 +666,8 @@ async def transcribe_audio(
             segments=prisma_response.get("segments"),
             preprocessing=preprocessing_note,
             audio_stored=False,  # Phase 3: never store audio by default
+            phone_extracted=phone_info.phone if phone_info and phone_info.is_valid else None,
+            phone_analysis=phone_info.to_dict() if phone_info else None,
         )
 
     finally:
@@ -659,4 +681,17 @@ async def transcribe_audio(
                     logger.debug("Deleted temp file: %s", path)
                 except OSError as exc:
                     logger.warning("Could not delete temp file %s: %s", path, exc)
+
+
+@router.post("/normalize-phone", response_model=PhoneNormalizeResponse)
+def normalize_phone_endpoint(
+    payload: PhoneNormalizeRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Normalizes and validates spoken or typed Indian phone number in English, Tamil, or Tanglish.
+    Single source of truth phone normalization API.
+    """
+    analysis = analyze_phone(payload.text)
+    return PhoneNormalizeResponse(**analysis.to_dict())
 

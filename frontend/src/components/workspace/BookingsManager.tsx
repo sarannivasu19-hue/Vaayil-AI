@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import type { SectorDetail, Booking } from '../../types';
+import type { TNDistrict } from '../../data/tamilNaduDistricts';
 import { api } from '../../services/api';
 import { BookingFormModal } from './BookingFormModal';
 import {
@@ -20,17 +21,20 @@ import {
   Tag,
   AlertCircle,
   RefreshCw,
+  MapPin,
 } from 'lucide-react';
 
 interface BookingsManagerProps {
   sectorDetail: SectorDetail;
+  district?: TNDistrict | null;
 }
 
-export const BookingsManager: React.FC<BookingsManagerProps> = ({ sectorDetail }) => {
+export const BookingsManager: React.FC<BookingsManagerProps> = ({ sectorDetail, district }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [filterByDistrict, setFilterByDistrict] = useState(false);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -41,14 +45,15 @@ export const BookingsManager: React.FC<BookingsManagerProps> = ({ sectorDetail }
   const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.getBookings(searchTerm, statusFilter);
+      const districtFilter = filterByDistrict && district ? district.en : undefined;
+      const data = await api.getBookings(searchTerm, statusFilter, districtFilter);
       setBookings(data);
     } catch (err: unknown) {
       console.error('Failed to fetch bookings:', err);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, filterByDistrict, district]);
 
   useEffect(() => {
     fetchBookings();
@@ -258,6 +263,21 @@ export const BookingsManager: React.FC<BookingsManagerProps> = ({ sectorDetail }
             </button>
           ))}
         </div>
+
+        {district && (
+          <button
+            onClick={() => setFilterByDistrict(!filterByDistrict)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer shrink-0 ${
+              filterByDistrict
+                ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-white'
+            }`}
+            title={`Toggle filtering records for ${district.en}`}
+          >
+            <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{district.en}</span>
+          </button>
+        )}
 
         <button
           onClick={fetchBookings}

@@ -45,11 +45,34 @@ export const CallLogsManager: React.FC<{ sectorDetail: SectorDetail }> = ({ sect
   const accent = sectorDetail.accent_color;
 
   // Single Call Log Detail View
+  useEffect(() => {
+    const handlePop = (e: PopStateEvent) => {
+      if (selectedLog && !e.state?.logDetail) {
+        setSelectedLog(null);
+      }
+    };
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [selectedLog]);
+
+  const handleSelectLog = (log: CallLogItem) => {
+    setSelectedLog(log);
+    window.history.pushState({ logDetail: true, logId: log.id }, '', window.location.hash);
+  };
+
+  const handleCloseDetail = () => {
+    if (window.history.state?.logDetail) {
+      window.history.back();
+    } else {
+      setSelectedLog(null);
+    }
+  };
+
   if (selectedLog) {
     return (
       <div className="space-y-6 text-left max-w-4xl mx-auto py-2">
         <button
-          onClick={() => setSelectedLog(null)}
+          onClick={handleCloseDetail}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold border border-white/10 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -212,7 +235,7 @@ export const CallLogsManager: React.FC<{ sectorDetail: SectorDetail }> = ({ sect
           {logs.map((log) => (
             <div
               key={log.id}
-              onClick={() => setSelectedLog(log)}
+              onClick={() => handleSelectLog(log)}
               className="p-4 rounded-2xl glass-panel border border-white/10 hover:border-white/20 transition-all flex items-center justify-between gap-4 cursor-pointer hover:bg-white/5"
             >
               <div className="space-y-1">

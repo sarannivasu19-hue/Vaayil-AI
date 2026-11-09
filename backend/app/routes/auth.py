@@ -1,6 +1,8 @@
 import re
+import logging
 from typing import Optional
 from datetime import timedelta
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -20,6 +22,7 @@ from app.schemas.auth import (
 from app.auth.security import verify_password, hash_password, create_access_token
 from app.auth.dependencies import get_current_user, security_bearer
 
+logger = logging.getLogger("vaayil-ai.auth")
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
@@ -27,7 +30,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """
     Public User Registration.
-    Validates name, email, phone number, password strength, and sector selection.
+    One Gmail = One User Account = Access to All Six Workspaces.
+    Requires only Full Name, Gmail Address, Password, and Confirm Password.
     Guarantees that public registration NEVER grants admin privileges.
     """
     # 1. Field validation
@@ -38,12 +42,14 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     clean_email = request.email.strip().lower()
     email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
     if not re.match(email_regex, clean_email):
-        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+        raise HTTPException(status_code=400, detail="Please enter a valid Gmail or email address.")
 
-    clean_phone = re.sub(r"[^\d+]", "", request.phone.strip())
-    digits_only = re.sub(r"[^\d]", "", clean_phone)
-    if len(digits_only) < 10:
-        raise HTTPException(status_code=400, detail="Mobile phone must have at least 10 digits.")
+    clean_phone = None
+    if request.phone:
+        raw_phone = re.sub(r"[^\d+]", "", request.phone.strip())
+        digits_only = re.sub(r"[^\d]", "", raw_phone)
+        if len(digits_only) >= 10:
+            clean_phone = raw_phone
 
     # 2. Password validation
     if len(request.password) < 8:
@@ -55,20 +61,12 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     if request.password != request.confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match.")
 
-    if not request.terms_accepted:
-        raise HTTPException(status_code=400, detail="You must accept the terms of service and privacy policy.")
-
-    # 3. Sector verification
-    sector = db.query(Sector).filter(Sector.id == request.sector_id).first()
-    if not sector:
-        raise HTTPException(status_code=400, detail=f"Invalid sector selected: '{request.sector_id}'.")
-
-    # 4. Duplicate checks
+    # 3. Duplicate checks - globally unique Gmail address
     existing_by_email = db.query(User).filter(User.email.ilike(clean_email)).first()
     if existing_by_email:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="An account with this email address already exists. Please sign in instead."
+            detail="This Gmail is already registered. Please log in using your existing account."
         )
 
     # Derive unique username from email
@@ -80,15 +78,15 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         candidate_username = f"{base_username}_{counter}"
         counter += 1
 
-    # 5. Create user securely (strictly 'owner' or 'staff' role, never 'admin')
+    # 4. Create single user account with access to all six workspaces
     new_user = User(
         username=candidate_username,
         email=clean_email,
         full_name=full_name,
         phone=clean_phone,
         hashed_password=hash_password(request.password),
-        role="owner",
-        sector_id=sector.id,
+        role="user",
+        sector_id=request.sector_id if request.sector_id else None,
         is_active=True
     )
     db.add(new_user)
@@ -96,7 +94,7 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     db.refresh(new_user)
 
     return RegisterResponse(
-        message=f"Account created successfully for {full_name}! You can now sign in to {sector.name}.",
+        message=f"Account created successfully for {full_name}! You can now log in with your Gmail.",
         user=UserResponse.model_validate(new_user)
     )
 
@@ -320,4 +318,77 @@ def get_me(
         user=UserResponse.model_validate(current_user),
         sector=sector_brief
     )
+
+
+class SwitchSectorRequest(BaseModel):
+    sector_id: str
+
+
+@router.post("/switch-sector", response_model=TokenResponse)
+def switch_sector(
+    request: SwitchSectorRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Switches active workspace context for the authenticated user across all six workspaces.
+    Reuses the same authenticated account without forcing separate logins.
+    """
+    target_sector = db.query(Sector).filter(Sector.id == request.sector_id).first()
+    if not target_sector:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid workspace sector ID: '{request.sector_id}'.",
+        )
+
+    # Multi-workspace authorization check
+    # Single User Account = Access to All Six Workspaces
+    if not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account has been deactivated. Please contact support.",
+        )
+
+    # Update active sector on user record
+    current_user.sector_id = target_sector.id
+    db.commit()
+    db.refresh(current_user)
+
+    # Create new JWT bound to the target workspace
+    token_payload = {
+        "sub": current_user.username,
+        "user_id": current_user.id,
+        "role": current_user.role,
+        "sector_id": target_sector.id,
+    }
+    access_token = create_access_token(
+        data=token_payload,
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+
+    sector_brief = SectorBrief(
+        id=target_sector.id,
+        name=target_sector.name,
+        display_name_ta=target_sector.display_name_ta,
+        display_name_en=target_sector.display_name_en,
+        tagline_ta=target_sector.tagline_ta,
+        tagline_en=target_sector.tagline_en,
+        icon=target_sector.icon,
+        accent_color=target_sector.accent_color,
+        secondary_color=target_sector.secondary_color,
+    )
+
+    logger.info(
+        "User '%s' (%s) switched workspace to '%s' (%s)",
+        current_user.username, current_user.email, target_sector.id, target_sector.name
+    )
+
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in_minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+        user=UserResponse.model_validate(current_user),
+        sector=sector_brief,
+    )
+
 

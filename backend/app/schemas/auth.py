@@ -16,11 +16,11 @@ class AdminLoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     full_name: str
     email: str
-    phone: str
     password: str
     confirm_password: str
-    sector_id: str
-    terms_accepted: bool = False
+    phone: Optional[str] = None
+    sector_id: Optional[str] = None
+    terms_accepted: Optional[bool] = True
 
 
 class UserResponse(BaseModel):

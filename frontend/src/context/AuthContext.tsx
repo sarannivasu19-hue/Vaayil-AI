@@ -13,6 +13,7 @@ interface AuthContextType {
   adminLogin: (username: string, password: string) => Promise<void>;
   demoLogin: (sectorId: string) => Promise<void>;
   registerUser: (input: RegisterInput) => Promise<RegisterResponse>;
+  switchSector: (sectorId: string) => Promise<void>;
   logout: () => void;
   setActiveSector: (sector: Sector | null) => void;
   refreshHealth: () => Promise<void>;
@@ -92,6 +93,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const switchSector = async (sectorId: string) => {
+    const data = await api.switchSector(sectorId);
+    setUser(data.user);
+    if (data.sector) {
+      setActiveSector(data.sector);
+    }
+  };
+
   const logout = () => {
     api.logout();
     setUser(null);
@@ -111,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         adminLogin,
         demoLogin,
         registerUser,
+        switchSector,
         logout,
         setActiveSector,
         refreshHealth,

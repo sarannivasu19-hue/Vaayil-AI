@@ -223,3 +223,39 @@ def update_settings(
 
     db.commit()
     return payload
+
+
+class LanguagePreferenceModel(BaseModel):
+    language_mode: str
+
+    @validator("language_mode")
+    def validate_lang(cls, v):
+        clean = v.strip().lower()
+        if clean in ("ta", "tamil"):
+            return "tamil"
+        elif clean in ("en", "english"):
+            return "english"
+        elif clean in ("tanglish", "ta-en", "mix"):
+            return "tanglish"
+        if clean not in VALID_LANGUAGE_MODES:
+            raise ValueError(f"language_mode must be one of {VALID_LANGUAGE_MODES}")
+        return clean
+
+
+@router.put("/language")
+def update_language_preference(
+    payload: LanguagePreferenceModel,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Fast endpoint to persist language preference for authenticated users (owner or admin).
+    Updates sector setting and associates with current workspace.
+    """
+    sid = current_user.sector_id
+    if sid:
+        _upsert_setting(db, sid, "language_mode", payload.language_mode)
+        db.commit()
+
+    return {"status": "success", "language_mode": payload.language_mode}
+

@@ -6,6 +6,7 @@ and Confirmation Workflow in Vaayil AI.
 import pytest
 from app.conversation.parsers.phone_parser import (
     parse_phone,
+    analyze_phone,
     format_phone_for_speech,
     apply_phone_correction,
     mask_phone,
@@ -53,7 +54,23 @@ class TestSpokenPhoneParser:
     def test_country_code_and_trunk_prefixes(self):
         assert parse_phone("+91 9345000025") == "9345000025"
         assert parse_phone("919345000025") == "9345000025"
+        assert parse_phone("0091 9345000025") == "9345000025"
+        assert parse_phone("00919345000025") == "9345000025"
         assert parse_phone("09345000025") == "9345000025"
+
+    def test_grouped_and_compound_numbers(self):
+        # English grouped numbers (forty-five, twenty-five)
+        assert parse_phone("Nine three forty-five double zero double zero two five") == "9345000025"
+        assert parse_phone("Nine three forty five double zero double zero twenty five") == "9345000025"
+        assert parse_phone("93 45 double zero double zero 2 5") == "9345000025"
+
+        # Tamil grouped numbers
+        tamil_grouped = "ஒன்பது மூன்று நாற்பத்தைந்து டபுள் ஜீரோ டபுள் ஜீரோ இருபத்தைந்து"
+        assert parse_phone(tamil_grouped) == "9345000025"
+
+        # Tanglish grouped numbers
+        tanglish_grouped = "Onbadhu moonu naappaththu anju double zero double zero iruvathi anju"
+        assert parse_phone(tanglish_grouped) == "9345000025"
 
     def test_embedded_in_sentence(self):
         assert parse_phone("my mobile is 9345000025 please call me") == "9345000025"
@@ -92,6 +109,56 @@ class TestSingleDigitCorrection:
         curr = "9345000025"
         assert apply_phone_correction(curr, "first digit is 8") == "8345000025"
         assert apply_phone_correction(curr, "முதல் எண் எட்டு") == "8345000025"
+
+    def test_ordinal_and_positional_corrections(self):
+        curr = "9345000025"
+        # Second digit correction
+        assert apply_phone_correction(curr, "second digit is 4") == "9445000025"
+        # Last two digits correction
+        assert apply_phone_correction(curr, "ending with 26") == "9345000026"
+        assert apply_phone_correction(curr, "ending with 45") == "9345000045"
+
+
+class TestPhoneAnalysisDiagnostics:
+    """Tests the structured diagnostic categorization and multilingual error messages."""
+
+    def test_valid_analysis(self):
+        a = analyze_phone("Nine three four five double zero double zero two five")
+        assert a.is_valid is True
+        assert a.phone == "9345000025"
+        assert a.digit_count == 10
+        assert a.status == "valid"
+
+    def test_incomplete_numbers_gives_helpful_diagnostic(self):
+        # 8 digits spoken
+        a = analyze_phone("9 3 4 5 0 0 0 0")
+        assert a.is_valid is False
+        assert a.phone is None
+        assert a.digit_count == 8
+        assert a.status == "incomplete"
+        assert "8 digits" in a.message_en
+        assert "8 இலக்கங்கள்" in a.message_ta
+        assert "8 digits" in a.message_tanglish
+
+    def test_too_long_numbers_gives_helpful_diagnostic(self):
+        # 12 digits without country prefix
+        a = analyze_phone("934500002512")
+        assert a.is_valid is False
+        assert a.status == "too_long"
+        assert a.digit_count == 12
+
+    def test_invalid_prefix_gives_helpful_diagnostic(self):
+        # Starts with 3
+        a = analyze_phone("3345000025")
+        assert a.is_valid is False
+        assert a.status == "invalid_prefix"
+        assert "6, 7, 8, or 9" in a.message_en
+        assert "6, 7, 8 அல்லது 9" in a.message_ta
+
+    def test_noise_or_unrelated_utterance(self):
+        a = analyze_phone("hello good morning booking please")
+        assert a.is_valid is False
+        assert a.status == "no_digits"
 
 
 class TestSpeechFormattingAndPrivacy:

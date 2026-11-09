@@ -10,7 +10,6 @@ import {
   User as UserIcon,
   Loader2,
   Sparkles,
-  CheckCircle2,
   AlertCircle,
   Eye,
   EyeOff,
@@ -105,7 +104,7 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
   onLoginSuccess,
   onOpenRegister,
 }) => {
-  const { login, demoLogin } = useAuth();
+  const { login } = useAuth();
   const theme = getSectorTheme(sector.id);
   const meta = SECTOR_META[sector.id] || {
     role: 'Workspace Administrator',
@@ -118,17 +117,16 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
     capabilities: ['Voice Agent Desk', 'Tamil Recognition', 'Real-time Triage', 'Audit Logs'],
   };
 
-  const [identifier, setIdentifier] = useState(meta.username);
-  const [password, setPassword] = useState('vaayil123');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDemoSubmitting, setIsDemoSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim() || !password) {
-      setErrorMessage('Please enter both username/email and password.');
+      setErrorMessage('Please enter both your registered Gmail/username and password.');
       return;
     }
 
@@ -141,33 +139,11 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
       setErrorMessage(
         err instanceof Error
           ? err.message
-          : 'Authentication failed. Please verify your credentials or use the demo login.'
+          : 'Authentication failed. Please verify your Gmail address and password.'
       );
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleDemoAccess = async () => {
-    setIsDemoSubmitting(true);
-    setErrorMessage(null);
-    try {
-      await demoLogin(sector.id);
-      onLoginSuccess();
-    } catch (err: unknown) {
-      setErrorMessage(
-        err instanceof Error
-          ? err.message
-          : 'Demo authentication failed. Please retry.'
-      );
-    } finally {
-      setIsDemoSubmitting(false);
-    }
-  };
-
-  const fillCredentials = () => {
-    setIdentifier(meta.username);
-    setPassword('vaayil123');
   };
 
   return (
@@ -350,81 +326,27 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
               </p>
             </div>
 
-            {/* One-Click Instant Demo Login Banner */}
+            {/* Single Gmail Account Callout */}
             <div
-              className="mb-5 p-4 rounded-xl border relative overflow-hidden transition-all"
+              className="mb-5 p-3.5 rounded-xl border relative overflow-hidden"
               style={{
                 background: 'rgba(50, 216, 232, 0.05)',
-                borderColor: 'rgba(50, 216, 232, 0.25)',
-                boxShadow: '0 4px 20px rgba(50, 216, 232, 0.08)',
+                borderColor: 'rgba(50, 216, 232, 0.20)',
               }}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#32D8E8]/15 border border-[#32D8E8]/30 flex items-center justify-center shrink-0 text-[#32D8E8] mt-0.5">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#32D8E8] uppercase tracking-wider font-mono">
-                        One-Click Demo Account
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#32D8E8]/20 text-[#32D8E8] font-mono">
-                        Fast Access
-                      </span>
-                    </div>
-                    <p className="text-xs font-semibold text-[#E8EDF9] mt-0.5">
-                      {meta.role}
-                    </p>
-                    <p className="text-[11px] text-[#9AA7BE] font-mono">
-                      {meta.email}
-                    </p>
-                  </div>
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#32D8E8]/15 border border-[#32D8E8]/30 flex items-center justify-center shrink-0 text-[#32D8E8] mt-0.5">
+                  <Sparkles className="w-4 h-4" />
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleDemoAccess}
-                  disabled={isDemoSubmitting || isSubmitting}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer transition-all border-none text-[#080B18] shrink-0 shadow-lg hover:shadow-cyan-500/25 disabled:opacity-50"
-                  style={{
-                    background: 'linear-gradient(135deg, #32D8E8 0%, #7DE8F5 100%)',
-                  }}
-                >
-                  {isDemoSubmitting ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Authenticating…</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Enter Workspace</span>
-                    </>
-                  )}
-                </button>
+                <div>
+                  <p className="text-xs font-semibold text-[#E8EDF9]">
+                    One Gmail Account · All Six Workspaces
+                  </p>
+                  <p className="text-[11px] text-[#9AA7BE] mt-0.5 leading-relaxed">
+                    Sign in with your registered Gmail address to access {sector.name}.
+                  </p>
+                </div>
               </div>
-
-              {/* Quick Fill credentials hint */}
-              <div className="mt-2.5 pt-2 border-t border-[#32D8E8]/15 flex items-center justify-between text-[11px]">
-                <span className="text-[#7E8CA3]">Or test manual credentials:</span>
-                <button
-                  type="button"
-                  onClick={fillCredentials}
-                  className="text-[#32D8E8] hover:underline cursor-pointer bg-transparent border-none p-0 text-[11px] font-mono font-medium"
-                >
-                  Auto-fill form inputs
-                </button>
-              </div>
-            </div>
-
-            {/* Visual Divider */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-[10px] text-[#7E8CA3] uppercase tracking-wider font-mono">
-                or sign in with credentials
-              </span>
-              <div className="flex-1 h-px bg-white/10" />
             </div>
 
             {/* Error Message Alert */}
@@ -519,7 +441,7 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting || isDemoSubmitting}
+                disabled={isSubmitting}
                 className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer border-none transition-all mt-2 disabled:opacity-60 shadow-lg"
                 style={{
                   background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentSecondary} 100%)`,
@@ -547,7 +469,7 @@ export const SectorLoginCard: React.FC<SectorLoginCardProps> = ({
                     onClick={onOpenRegister}
                     className="text-xs text-[#32D8E8] hover:underline bg-transparent border-none cursor-pointer font-medium"
                   >
-                    New business here? Register your account →
+                    New here? Create one account for all six workspaces →
                   </button>
                 </div>
               )}

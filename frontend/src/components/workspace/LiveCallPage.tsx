@@ -7,6 +7,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { SectorDetail, TranscribeResponse, LanguageMode, ConversationTurn } from '../../types';
 import { api, ApiError } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 import { VoiceOrb, type OrbState } from './VoiceOrb';
 import {
   Mic, MicOff, Square, Upload, Loader2, AlertTriangle,
@@ -16,6 +17,7 @@ import {
 import { clsx } from 'clsx';
 import { Card } from '../ui/Card';
 import { SectorBackground } from '../world/SectorBackground';
+import { audioController } from '../../utils/audioPlaybackController';
 
 interface LanguageOption {
   value: LanguageMode;
@@ -40,8 +42,13 @@ function formatTimer(secs: number): string {
 }
 
 export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorDetail }) => {
+  const { language: currentLang, setLanguage: setGlobalLanguage } = useLanguage();
+  const language = currentLang as LanguageMode;
+  const setLanguage = (newLang: LanguageMode) => {
+    if (newLang === 'auto') return;
+    setGlobalLanguage(newLang);
+  };
   const [orbState, setOrbState] = useState<OrbState>('idle');
-  const [language, setLanguage] = useState<LanguageMode>('tanglish');
   const [autoListen, setAutoListen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
@@ -80,6 +87,7 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
       if (audioContextRef.current) audioContextRef.current.close().catch(() => {});
       if (lastAgentAudioUrl) URL.revokeObjectURL(lastAgentAudioUrl);
+      audioController.stop();
     };
   }, [lastAgentAudioUrl]);
 
@@ -89,15 +97,16 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
     }
   }, [chatHistory, submittingTurn]);
 
+  // Sync initial greeting turn if only greeting exists or empty
   useEffect(() => {
-    if (chatHistory.length === 0) {
+    if (chatHistory.length <= 1) {
       const firstSlot = sectorDetail.slots[0];
       const initialGreeting = language === 'tamil' ? firstSlot.prompts.ta
         : language === 'english' ? firstSlot.prompts.en : firstSlot.prompts.tanglish;
       setChatHistory([{ speaker: 'agent', text: initialGreeting }]);
       setNextSlot(firstSlot.name);
     }
-  }, [sectorDetail, language, chatHistory.length]);
+  }, [sectorDetail, language]);
 
   const playAgentAudio = useCallback(async (audioUrl: string) => {
     if (isMuted) return;
@@ -659,6 +668,7 @@ export const LiveCallPage: React.FC<{ sectorDetail: SectorDetail }> = ({ sectorD
                       setSubmittingTurn(true);
                       const b = await api.confirmBookingFromCall({ session_id: sessionId || 'sess-manual', sector_id: sectorDetail.id, slots: extractedSlots });
                       setEngineState('completed');
+                      audioController.stop();
                       const confirmMsg = `மிக்க நன்றி! உங்கள் முன்பதிவு எண் ${b.reference_number}.`;
                       api.speakText(confirmMsg, 'ta-IN', 'Shivani').then((blob) => {
                         const url = URL.createObjectURL(blob); setLastAgentAudioUrl(url); playAgentAudio(url);

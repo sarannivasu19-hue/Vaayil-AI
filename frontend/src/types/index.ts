@@ -44,20 +44,20 @@ export interface User {
   email: string;
   full_name: string;
   phone?: string;
-  role: 'owner' | 'staff' | 'admin';
+  role: 'owner' | 'staff' | 'admin' | 'user';
   is_active?: boolean;
-  sector_id: string;
+  sector_id?: string | null;
   created_at: string;
 }
 
 export interface RegisterInput {
   full_name: string;
   email: string;
-  phone: string;
   password: string;
   confirm_password: string;
-  sector_id: string;
-  terms_accepted: boolean;
+  phone?: string;
+  sector_id?: string;
+  terms_accepted?: boolean;
 }
 
 export interface RegisterResponse {

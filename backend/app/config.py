@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = f"sqlite:///{(BACKEND_DIR / 'vaayil.db').resolve().as_posix()}"
 
+    # Google OAuth & Gmail Configuration
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://127.0.0.1:8000/api/gmail/callback"
+    GOOGLE_DEFAULT_EMAIL: str = "sarannivasusenthil@gmail.com"
+
     # Environment & CORS
     ENVIRONMENT: str = "development"
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"

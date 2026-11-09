@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { WorkspaceTab } from './Sidebar';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   LayoutDashboard,
   PhoneCall,
@@ -10,6 +11,7 @@ import {
   ShieldAlert,
   MoreHorizontal,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -21,13 +23,14 @@ interface BottomNavProps {
 }
 
 const PRIMARY_ITEMS = [
-  { id: 'dashboard'  as WorkspaceTab, label: 'Home',     Icon: LayoutDashboard },
-  { id: 'live-call'  as WorkspaceTab, label: 'Call',     Icon: PhoneCall       },
-  { id: 'bookings'   as WorkspaceTab, label: 'Bookings', Icon: CalendarDays    },
-  { id: 'call-logs'  as WorkspaceTab, label: 'Logs',     Icon: FileText        },
+  { id: 'dashboard'      as WorkspaceTab, label: 'Home',     Icon: LayoutDashboard },
+  { id: 'smart-service'  as WorkspaceTab, label: 'Services', Icon: Sparkles        },
+  { id: 'live-call'      as WorkspaceTab, label: 'Call',     Icon: PhoneCall       },
+  { id: 'bookings'       as WorkspaceTab, label: 'Bookings', Icon: CalendarDays    },
 ];
 
 const MORE_ITEMS = [
+  { id: 'call-logs'     as WorkspaceTab, label: 'Logs',         Icon: FileText    },
   { id: 'urgent-alerts' as WorkspaceTab, label: 'Alerts',       Icon: ShieldAlert },
   { id: 'noise-lab'     as WorkspaceTab, label: 'Noise Lab',    Icon: Volume2     },
   { id: 'safety-test'   as WorkspaceTab, label: 'Safety Sheet', Icon: ShieldAlert },
@@ -35,7 +38,23 @@ const MORE_ITEMS = [
 ];
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, accentColor }) => {
+  const { t } = useLanguage();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  const getLabel = (id: WorkspaceTab, fallback: string): string => {
+    switch (id) {
+      case 'dashboard': return t('nav.dashboard');
+      case 'smart-service': return t('nav.smart_service');
+      case 'live-call': return t('nav.live_call');
+      case 'bookings': return t('nav.bookings');
+      case 'call-logs': return t('nav.call_logs');
+      case 'urgent-alerts': return t('nav.urgent_alerts');
+      case 'noise-lab': return t('nav.noise_lab');
+      case 'safety-test': return t('nav.safety_test');
+      case 'settings': return t('nav.settings');
+      default: return fallback;
+    }
+  };
 
   const isMoreActive = MORE_ITEMS.some((i) => i.id === activeTab);
 
@@ -93,7 +112,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, a
                     }}
                   >
                     <Icon className="w-5 h-5" />
-                    <span className="text-[11px] font-medium">{label}</span>
+                    <span className="text-[11px] font-medium">{getLabel(id, label)}</span>
                   </button>
                 );
               })}
@@ -123,13 +142,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, a
             <button
               key={id}
               onClick={() => { setMoreOpen(false); setActiveTab(id); }}
-              aria-label={label}
+              aria-label={getLabel(id, label)}
               aria-current={isActive ? 'page' : undefined}
               className="flex-1 flex flex-col items-center justify-center gap-1 h-full cursor-pointer border-none bg-transparent transition-colors"
               style={{ color: isActive ? accentColor : '#9AA7BE', minHeight: 44 }}
             >
               <Icon className={clsx('w-[22px] h-[22px]', isActive && 'scale-110 transition-transform')} />
-              <span className="text-[10px] font-medium leading-none">{label}</span>
+              <span className="text-[10px] font-medium leading-none">{getLabel(id, label)}</span>
             </button>
           );
         })}

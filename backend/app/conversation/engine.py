@@ -15,6 +15,7 @@ from app.sectors.base import SectorPackage, SlotDefinition
 from app.conversation.parsers import (
     parse_number,
     parse_phone,
+    analyze_phone,
     mask_phone,
     format_phone_for_speech,
     apply_phone_correction,
@@ -382,11 +383,11 @@ class ConversationEngine:
 
         # Check if the active target slot being asked is phone
         if current_slot == "phone":
-            parsed_phone = parse_phone(user_transcript)
-            if parsed_phone:
+            analysis = analyze_phone(user_transcript)
+            if analysis.is_valid and analysis.phone:
                 updated_slots = dict(current_slots)
-                updated_slots["_pending_phone"] = parsed_phone
-                spoken = format_phone_for_speech(parsed_phone, self.language)
+                updated_slots["_pending_phone"] = analysis.phone
+                spoken = format_phone_for_speech(analysis.phone, self.language)
                 msg = (
                     f"உங்கள் மொபைல் எண் {spoken}. சரிதானா?"
                     if self.language == "ta"
@@ -403,19 +404,19 @@ class ConversationEngine:
                     is_complete=False,
                 )
             else:
-                unclear_msg = (
-                    "மன்னிக்கவும், 10 இலக்க மொபைல் எண்ணை தெளிவாக கூறுங்கள்."
+                feedback = (
+                    analysis.message_ta
                     if self.language == "ta"
-                    else "Sorry, please provide a valid 10-digit mobile number."
+                    else analysis.message_en
                     if self.language == "en"
-                    else "Mannikkavum, 10-digit mobile number-a sollunga."
+                    else analysis.message_tanglish
                 )
                 return EngineTurnResult(
                     session_id=session_id,
                     state="collecting",
                     slots=current_slots,
                     next_slot="phone",
-                    agent_message=unclear_msg,
+                    agent_message=feedback,
                     is_complete=False,
                 )
 

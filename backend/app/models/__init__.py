@@ -6,6 +6,7 @@ from app.models.alert import Alert
 from app.models.setting import SectorSetting
 from app.models.call_session import CallSession
 from app.models.noise_lab import NoiseLabRun
+from app.models.google_account import GoogleAccount
 
 __all__ = [
     "User",
@@ -16,5 +17,6 @@ __all__ = [
     "SectorSetting",
     "CallSession",
     "NoiseLabRun",
+    "GoogleAccount",
 ]
 

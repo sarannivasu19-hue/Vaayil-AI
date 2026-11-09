@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Sector, User } from '../../types';
 import { getSectorTheme } from '../../config/sectorThemes';
+import { useLanguage } from '../../context/LanguageContext';
 import { DynamicIcon } from '../ui/Icons';
 import {
   LayoutDashboard,
@@ -15,11 +16,13 @@ import {
   ShieldCheck,
   Volume2,
   ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export type WorkspaceTab =
   | 'dashboard'
+  | 'smart-service'
   | 'live-call'
   | 'bookings'
   | 'call-logs'
@@ -57,11 +60,12 @@ const NAV_GROUPS = [
   {
     label: 'WORKSPACE',
     items: [
-      { id: 'dashboard' as WorkspaceTab,  label_en: 'Dashboard',         label_ta: 'டாஷ்போர்டு',         Icon: LayoutDashboard },
-      { id: 'live-call' as WorkspaceTab,  label_en: 'Live Call Console', label_ta: 'நேரடி அழைப்பு',       Icon: PhoneCall       },
-      { id: 'bookings'  as WorkspaceTab,  label_en: 'Bookings',          label_ta: 'முன்பதிவுகள்',         Icon: CalendarDays    },
-      { id: 'call-logs' as WorkspaceTab,  label_en: 'Call Logs',         label_ta: 'அழைப்பு பதிவுகள்',    Icon: FileText        },
-      { id: 'urgent-alerts' as WorkspaceTab, label_en: 'Urgent Alerts',  label_ta: 'அவசர எச்சரிக்கை',    Icon: ShieldAlert     },
+      { id: 'dashboard' as WorkspaceTab,      label_en: 'Dashboard',             label_ta: 'டாஷ்போர்டு',             Icon: LayoutDashboard },
+      { id: 'smart-service' as WorkspaceTab,  label_en: 'Smart Service Center',  label_ta: 'ஸ்மார்ட் சேவை மையம்',    Icon: Sparkles        },
+      { id: 'live-call' as WorkspaceTab,      label_en: 'Live Call Console',     label_ta: 'நேரடி அழைப்பு',           Icon: PhoneCall       },
+      { id: 'bookings'  as WorkspaceTab,      label_en: 'Bookings',              label_ta: 'முன்பதிவுகள்',             Icon: CalendarDays    },
+      { id: 'call-logs' as WorkspaceTab,      label_en: 'Call Logs',             label_ta: 'அழைப்பு பதிவுகள்',        Icon: FileText        },
+      { id: 'urgent-alerts' as WorkspaceTab,  label_en: 'Urgent Alerts',      label_ta: 'அவசர எச்சரிக்கை',        Icon: ShieldAlert     },
     ],
   },
   {
@@ -89,6 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onReturnHub,
   onLogout,
 }) => {
+  const { t, language } = useLanguage();
   const theme = getSectorTheme(sector.id);
   const accent = theme.accent;
 
@@ -199,9 +204,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   />
                   {!isCollapsed && (
                     <div className="flex flex-col leading-none overflow-hidden">
-                      <span className="text-[13px] font-medium truncate">{label_en}</span>
-                      <span className="text-[10px] mt-0.5 truncate font-tamil" style={{ color: isActive ? '#9AA7BE' : '#4A5568' }}>
-                        {label_ta}
+                      <span className="text-[13px] font-medium truncate">
+                        {language === 'tamil'
+                          ? label_ta
+                          : language === 'english'
+                          ? label_en
+                          : t('nav.' + id.replace('-', '_'))}
+                      </span>
+                      <span className="text-[10px] mt-0.5 truncate" style={{ color: isActive ? '#9AA7BE' : '#4A5568' }}>
+                        {language === 'tamil' ? label_en : label_ta}
                       </span>
                     </div>
                   )}

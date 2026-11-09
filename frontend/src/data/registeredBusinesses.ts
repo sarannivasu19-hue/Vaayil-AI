@@ -1,3 +1,5 @@
+import { TN_DISTRICTS } from './tamilNaduDistricts';
+
 export interface ServiceOffering {
   id: string;
   nameEn: string;
@@ -12,11 +14,14 @@ export interface BusinessRegistryEntry {
   nameTa: string;
   taglineEn: string;
   taglineTa: string;
-  districts: string[]; // District IDs where this registered business operates
+  districts: string[]; // District IDs where this registered business operates (all 38 TN districts)
   phone: string;
   email: string;
   services: ServiceOffering[];
 }
+
+// All six businesses operate statewide across all 38 Tamil Nadu districts
+export const ALL_TN_DISTRICT_IDS: string[] = TN_DISTRICTS.map((d) => d.id);
 
 export const REGISTERED_BUSINESSES_AND_SERVICES: BusinessRegistryEntry[] = [
   {
@@ -25,8 +30,7 @@ export const REGISTERED_BUSINESSES_AND_SERVICES: BusinessRegistryEntry[] = [
     nameTa: 'ஊராட்சி & அரசு சுகாதார உதவி மையம்',
     taglineEn: 'Citizen public health triage, vaccination schedules, and civic complaints',
     taglineTa: 'பொது சுகாதார உதவி, தடுப்பூசி அட்டவணை மற்றும் புகார்கள்',
-    // Covers rural primary healthcare across key delta and southern districts
-    districts: ['thanjavur', 'madurai', 'tiruchirappalli', 'salem', 'tiruvarur', 'nagapattinam', 'pudukkottai', 'dindigul', 'chengalpattu'],
+    districts: ALL_TN_DISTRICT_IDS,
     phone: '+91 94441 23456',
     email: 'health.desk@panchayat.tn.gov.in',
     services: [
@@ -43,8 +47,7 @@ export const REGISTERED_BUSINESSES_AND_SERVICES: BusinessRegistryEntry[] = [
     nameTa: 'சரண் குடும்ப நல மருத்துவமனை',
     taglineEn: 'Doctor appointment bookings, token scheduling & urgent triage',
     taglineTa: 'மருத்துவர் சந்திப்பு முன்பதிவு மற்றும் அவசர கவனிப்பு',
-    // Healthcare hub operating across major urban/semi-urban healthcare zones
-    districts: ['chennai', 'coimbatore', 'madurai', 'tiruchirappalli', 'salem', 'vellore', 'tirunelveli', 'erode', 'kancheepuram'],
+    districts: ALL_TN_DISTRICT_IDS,
     phone: '+91 98409 12345',
     email: 'appointments@saranclinic.com',
     services: [
@@ -61,8 +64,7 @@ export const REGISTERED_BUSINESSES_AND_SERVICES: BusinessRegistryEntry[] = [
     nameTa: 'அரசு கால்நடை மருத்துவ மையம்',
     taglineEn: 'Livestock & pet care appointments, vaccinations and urgent care',
     taglineTa: 'ஆடு, மாடு, வீட்டு செல்லப் பிராணிகள் சிகிச்சை முன்பதிவு',
-    // Operates in agricultural, dairy & livestock heartlands
-    districts: ['salem', 'erode', 'tiruppur', 'namakkal', 'thanjavur', 'dindigul', 'dharmapuri', 'villupuram', 'tiruvannamalai'],
+    districts: ALL_TN_DISTRICT_IDS,
     phone: '+91 97890 12345',
     email: 'doctor@govtvetmedcentre.tn.gov.in',
     services: [
@@ -82,8 +84,7 @@ export const REGISTERED_BUSINESSES_AND_SERVICES: BusinessRegistryEntry[] = [
     nameTa: 'சரண் ஹெரிடேஜ் தங்கும் விடுதி',
     taglineEn: 'Room reservations, check-in schedules & guest assistance',
     taglineTa: 'அறைகள் முன்பதிவு, சோதனை நேரம் மற்றும் விருந்தினர் சேவை',
-    // Tourism, heritage, temple, hill-station and transit districts
-    districts: ['chennai', 'madurai', 'coimbatore', 'thanjavur', 'kanyakumari', 'tirunelveli', 'nilgiris', 'dindigul', 'ramanathapuram', 'tiruvannamalai'],
+    districts: ALL_TN_DISTRICT_IDS,
     phone: '+91 91234 56780',
     email: 'stay@saranhotel.com',
     services: [
@@ -99,8 +100,7 @@ export const REGISTERED_BUSINESSES_AND_SERVICES: BusinessRegistryEntry[] = [
     nameTa: 'சரண் உணவகம்',
     taglineEn: 'Table dining reservations & bulk event catering orders',
     taglineTa: 'மேஜை முன்பதிவு மற்றும் விஷேசங்களுக்கான மொத்த உணவு ஆர்டர்',
-    // Authentic South Indian food epicenters and dining circuits
-    districts: ['madurai', 'chennai', 'coimbatore', 'tiruchirappalli', 'dindigul', 'virudhunagar', 'theni', 'sivaganga'],
+    districts: ALL_TN_DISTRICT_IDS,
     phone: '+91 98765 43210',
     email: 'orders@saranrestaurant.com',
     services: [
@@ -114,8 +114,7 @@ export const REGISTERED_BUSINESSES_AND_SERVICES: BusinessRegistryEntry[] = [
     nameTa: 'சரண் போட்டித் தேர்வு பயிற்சி மையம்',
     taglineEn: 'Admissions, demo class booking & course fee inquiries',
     taglineTa: 'தேர்வு சேர்க்கை, கட்டண விவரங்கள் & இலவச மாதிரி வகுப்பு',
-    // Education centers across competitive exam test-taking regions
-    districts: ['chennai', 'coimbatore', 'madurai', 'tiruchirappalli', 'salem', 'tirunelveli', 'vellore', 'erode', 'thanjavur'],
+    districts: ALL_TN_DISTRICT_IDS,
     phone: '+91 90123 45678',
     email: 'admissions@sarancoaching.com',
     services: [

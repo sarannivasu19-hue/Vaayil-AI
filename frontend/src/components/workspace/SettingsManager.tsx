@@ -6,7 +6,7 @@ import {
   Building2, Clock, Calendar, Globe2, Mic2, ShieldAlert, Lock,
   Save, RotateCcw, Loader2, Info, Plus, Trash2, GripVertical,
   CheckCircle2, AlertTriangle, Phone, Mail, ChevronDown, ChevronUp,
-  Settings2, MessageSquare, X,
+  Settings2, MessageSquare, X, RefreshCw, Send,
 } from 'lucide-react';
 
 interface SettingsManagerProps {
@@ -136,6 +136,95 @@ export const SettingsManager: React.FC<SettingsManagerProps> = ({ sectorDetail }
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
 
+  // ── Centralized Shared Gmail & Google Integration State ──
+  const [gmailStatus, setGmailStatus] = useState<{
+    is_connected: boolean;
+    email: string | null;
+    token_status: string;
+    workspaces_enabled: string[];
+    last_error: string | null;
+  }>({
+    is_connected: false,
+    email: null,
+    token_status: 'disconnected',
+    workspaces_enabled: [],
+    last_error: null,
+  });
+  const [gmailLoading, setGmailLoading] = useState(false);
+  const [connectEmailInput, setConnectEmailInput] = useState('sarannivasusenthil@gmail.com');
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  const [testEmailSending, setTestEmailSending] = useState(false);
+  const [customTestEmail, setCustomTestEmail] = useState('');
+
+  const loadGmailStatus = async () => {
+    try {
+      const data = await api.getGmailStatus();
+      setGmailStatus(data);
+      if (data.email) {
+        setConnectEmailInput(data.email);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch Gmail status:', e);
+    }
+  };
+
+  const handleConnectGmail = async (emailToConnect: string) => {
+    setGmailLoading(true);
+    try {
+      const res = await api.connectGmail(emailToConnect);
+      setGmailStatus(res);
+      setShowConnectModal(false);
+      toast({
+        type: 'success',
+        message: `Gmail account ${res.email} successfully connected across all 6 workspaces!`,
+      });
+    } catch (e: any) {
+      toast({
+        type: 'error',
+        message: e?.message || 'Failed to connect Gmail account.',
+      });
+    } finally {
+      setGmailLoading(false);
+    }
+  };
+
+  const handleDisconnectGmail = async () => {
+    setGmailLoading(true);
+    try {
+      const res = await api.disconnectGmail();
+      setGmailStatus(res);
+      toast({
+        type: 'info',
+        message: 'Gmail account disconnected across all workspaces.',
+      });
+    } catch (e: any) {
+      toast({
+        type: 'error',
+        message: e?.message || 'Failed to disconnect Gmail account.',
+      });
+    } finally {
+      setGmailLoading(false);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    setTestEmailSending(true);
+    try {
+      const res = await api.sendTestGmailEmail(sectorDetail.id, customTestEmail || undefined);
+      toast({
+        type: 'success',
+        message: `Test email sent for ${res.business_name} to ${res.recipient_email}! Ref: ${res.reference_number}`,
+      });
+    } catch (e: any) {
+      toast({
+        type: 'error',
+        message: e?.message || 'Failed to send test email. Check Gmail connection.',
+      });
+    } finally {
+      setTestEmailSending(false);
+    }
+  };
+
   // Dirty state: has user made unsaved changes?
   const isDirty = JSON.stringify(settings) !== JSON.stringify(saved);
 
@@ -163,6 +252,7 @@ export const SettingsManager: React.FC<SettingsManagerProps> = ({ sectorDetail }
       }
     }
     load();
+    loadGmailStatus();
     return () => { cancelled = true; };
   }, [sectorDetail.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -389,7 +479,185 @@ export const SettingsManager: React.FC<SettingsManagerProps> = ({ sectorDetail }
           </div>
         </SectionCard>
 
-        {/* ══ 2. WORKING HOURS ══ */}
+        {/* ══ 2. GOOGLE ACCOUNT & GMAIL INTEGRATION (SHARED ACROSS ALL 6 WORKSPACES) ══ */}
+        <SectionCard icon={<Mail className="w-4 h-4" />} title="Google Account & Gmail Integration" accent="#ea4335">
+          <div className="space-y-4">
+            {/* Status Header Banner */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-lg ${gmailStatus.is_connected ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-slate-700 to-slate-800'}`}>
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-white">
+                      {gmailStatus.is_connected ? gmailStatus.email : 'No Gmail Account Connected'}
+                    </span>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${gmailStatus.is_connected ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-700/50 text-slate-400 border border-slate-600/30'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${gmailStatus.is_connected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
+                      {gmailStatus.is_connected ? 'Connected' : 'Disconnected'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {gmailStatus.is_connected
+                      ? `Active & authorized across all 6 business workspaces. Token status: ${gmailStatus.token_status}`
+                      : 'Connect your Gmail account to enable isolated booking confirmations & service notices.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                {gmailStatus.is_connected ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleConnectGmail(connectEmailInput || 'sarannivasusenthil@gmail.com')}
+                      disabled={gmailLoading}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${gmailLoading ? 'animate-spin' : ''}`} />
+                      Reauthorize
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDisconnectGmail}
+                      disabled={gmailLoading}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer"
+                    >
+                      Disconnect
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowConnectModal(true)}
+                    disabled={gmailLoading}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-lg shadow-red-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    Connect Gmail
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Workspaces Shared Pill List */}
+            <div className="p-3.5 rounded-xl bg-slate-900/40 border border-white/5">
+              <span className="text-xs font-semibold text-slate-300 block mb-2">
+                Shared Workspace Access (1 Account → 6 Workspaces)
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { id: 'panchayat_health', label: 'Panchayat Health Help Desk', current: sectorDetail.id === 'panchayat_health' },
+                  { id: 'clinic', label: 'Saran Primary Clinic', current: sectorDetail.id === 'clinic' },
+                  { id: 'vet_clinic', label: 'Govt Veterinary Centre', current: sectorDetail.id === 'vet_clinic' },
+                  { id: 'hotel_lodge', label: 'Saran Hotel & Lodge', current: sectorDetail.id === 'hotel_lodge' },
+                  { id: 'restaurant', label: 'Saran Restaurant & Catering', current: sectorDetail.id === 'restaurant' },
+                  { id: 'coaching', label: 'Saran Coaching Academy', current: sectorDetail.id === 'coaching' },
+                ].map((w) => (
+                  <span
+                    key={w.id}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 ${
+                      w.current
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                        : 'bg-slate-800/60 text-slate-400 border-white/5'
+                    }`}
+                  >
+                    <CheckCircle2 className={`w-3 h-3 ${w.current ? 'text-cyan-400' : 'text-slate-500'}`} />
+                    {w.label} {w.current && <span className="text-[10px] uppercase font-bold text-cyan-400">(Current)</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Test Email Dispatch Box */}
+            <div className="p-4 rounded-xl bg-slate-900/40 border border-white/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-semibold text-slate-200">
+                    Test Workspace Notification Email
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Sends a live branded notification for <strong>{sectorDetail.name}</strong> ensuring tenant data isolation.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSendTestEmail}
+                  disabled={!gmailStatus.is_connected || testEmailSending}
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Send className={`w-3 h-3 ${testEmailSending ? 'animate-pulse' : ''}`} />
+                  {testEmailSending ? 'Sending...' : 'Send Test Email'}
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="email"
+                  className={`${inputCls} text-xs py-1.5`}
+                  placeholder={`Recipient email (defaults to ${gmailStatus.email || 'connected address'})`}
+                  value={customTestEmail}
+                  onChange={(e) => setCustomTestEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Connect Modal Overlay */}
+            {showConnectModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                <div className="w-full max-w-md p-6 rounded-2xl bg-slate-900 border border-white/10 shadow-2xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <h3 className="text-sm font-bold text-white">Connect Google / Gmail</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowConnectModal(false)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Enter the Gmail address you want to authorize across all six Vaayil AI workspaces:
+                  </p>
+                  <div>
+                    <input
+                      type="email"
+                      className={inputCls}
+                      value={connectEmailInput}
+                      onChange={(e) => setConnectEmailInput(e.target.value)}
+                      placeholder="e.g. sarannivasusenthil@gmail.com"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowConnectModal(false)}
+                      className="px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:bg-slate-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleConnectGmail(connectEmailInput)}
+                      disabled={!connectEmailInput || gmailLoading}
+                      className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-500 disabled:opacity-50"
+                    >
+                      {gmailLoading ? 'Connecting...' : 'Authorize Gmail'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+
+        {/* ══ 3. WORKING HOURS ══ */}
         <SectionCard icon={<Clock className="w-4 h-4" />} title="Working Hours" accent="#06b6d4">
 
           {/* Open / Close time */}

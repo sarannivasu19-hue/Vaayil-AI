@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import type { Sector } from './types';
 import { api } from './services/api';
@@ -11,12 +11,13 @@ import { UserAuthModal } from './components/auth/UserAuthModal';
 import { AdminLoginModal } from './components/auth/AdminLoginModal';
 import { AdminDashboardView } from './components/admin/AdminDashboardView';
 import { VaayilHubHero } from './components/hub/VaayilHubHero';
+import { VaayilHub2D } from './components/hub/VaayilHub2D';
 import { DistrictSelector } from './components/hub/DistrictSelector';
 import { SectorSelector } from './components/hub/SectorSelector';
 import { BusinessSelector } from './components/hub/BusinessSelector';
 import type { TNDistrict } from './data/tamilNaduDistricts';
 import type { SectorCategory } from './components/hub/SectorSelector';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Mic, LogOut, MapPin } from 'lucide-react';
 
 /*
  * Navigation State Machine
@@ -50,6 +51,36 @@ function writeLS(key: string, value: unknown) {
     if (value === null) localStorage.removeItem(key);
     else localStorage.setItem(key, JSON.stringify(value));
   } catch { /* ignore quota */ }
+}
+
+function getInitialNavState(): {
+  navState: NavState;
+  district: TNDistrict | null;
+  sectorCategory: SectorCategory | null;
+  sector: Sector | null;
+} {
+  const hash = window.location.hash;
+  const savedDistrict = readLS<TNDistrict>(LS_DISTRICT);
+  const savedSectorCat = readLS<SectorCategory>(LS_SECTOR_CAT);
+  const savedSector = readLS<Sector>(LS_SECTOR);
+  const token = localStorage.getItem('vaayil_token');
+
+  if (hash.startsWith('#workspace') && token) {
+    return { navState: 'workspace', district: savedDistrict, sectorCategory: savedSectorCat, sector: savedSector };
+  }
+  if (hash.startsWith('#login') && savedSector) {
+    return { navState: 'login', district: savedDistrict, sectorCategory: savedSectorCat, sector: savedSector };
+  }
+  if (hash.startsWith('#business') && savedDistrict && savedSectorCat) {
+    return { navState: 'business', district: savedDistrict, sectorCategory: savedSectorCat, sector: savedSector };
+  }
+  if (hash.startsWith('#sector') && savedDistrict) {
+    return { navState: 'sector', district: savedDistrict, sectorCategory: savedSectorCat, sector: null };
+  }
+  if (hash === '#district') {
+    return { navState: 'district', district: null, sectorCategory: null, sector: null };
+  }
+  return { navState: 'hero', district: null, sectorCategory: null, sector: null };
 }
 
 /* ── Loading screen ── */
@@ -92,16 +123,17 @@ const ErrorScreen: React.FC<{ error: string }> = ({ error }) => (
 );
 
 export const App: React.FC = () => {
-  const { user, activeSector, logout, isLoading: authLoading } = useAuth();
+  const { user, activeSector, logout, switchSector, isLoading: authLoading } = useAuth();
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [loadingSectors, setLoadingSectors] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  /* ── Navigation state ── */
-  const [navState, setNavState] = useState<NavState>('hero');
-  const [selectedDistrict, setSelectedDistrict] = useState<TNDistrict | null>(() => readLS<TNDistrict>(LS_DISTRICT));
-  const [selectedSectorCategory, setSelectedSectorCategory] = useState<SectorCategory | null>(() => readLS<SectorCategory>(LS_SECTOR_CAT));
-  const [selectedSector, setSelectedSector] = useState<Sector | null>(() => readLS<Sector>(LS_SECTOR));
+  /* ── Navigation state with direct URL / refresh restoration ── */
+  const initialNav = useMemo(() => getInitialNavState(), []);
+  const [navState, setNavState] = useState<NavState>(initialNav.navState);
+  const [selectedDistrict, setSelectedDistrict] = useState<TNDistrict | null>(() => initialNav.district || readLS<TNDistrict>(LS_DISTRICT));
+  const [selectedSectorCategory, setSelectedSectorCategory] = useState<SectorCategory | null>(() => initialNav.sectorCategory || readLS<SectorCategory>(LS_SECTOR_CAT));
+  const [selectedSector, setSelectedSector] = useState<Sector | null>(() => initialNav.sector || readLS<Sector>(LS_SECTOR));
   const [showIntro, setShowIntro] = useState<boolean>(false);
 
   /*
@@ -114,8 +146,6 @@ export const App: React.FC = () => {
   /* ── Auth modals ── */
   const [showUserAuthModal, setShowUserAuthModal] = useState<boolean>(false);
   const [showAdminLoginModal, setShowAdminLoginModal] = useState<boolean>(false);
-
-  /* ── Sector list ── */
 
   /* ── Sector list ── */
   useEffect(() => {
@@ -136,9 +166,16 @@ export const App: React.FC = () => {
   /* ── Browser Back / Forward ── */
   useEffect(() => {
     const handlePop = (e: PopStateEvent) => {
-      const s = e.state as null | { navState: NavState; district: TNDistrict | null; sectorCategory: SectorCategory | null; sector: Sector | null; forceShowHub?: boolean };
+      const s = e.state as null | {
+        navState?: NavState;
+        step?: number;
+        district?: TNDistrict | null;
+        sectorCategory?: SectorCategory | null;
+        sector?: Sector | null;
+        forceShowHub?: boolean;
+      };
+
       if (s?.navState) {
-        // Restore every field stored in the history entry
         setNavState(s.navState);
         setForceShowHub(s.forceShowHub ?? (s.navState !== 'workspace'));
         if (s.district !== undefined) {
@@ -154,13 +191,9 @@ export const App: React.FC = () => {
           writeLS(LS_SECTOR, s.sector);
         }
         setShowIntro(false);
-
-        // If we popped BACK from workspace and no longer on 'workspace',
-        // we must NOT logout — just show the pre-login screen again.
-        // If the token is still valid the user stays logged in until they
-        // explicitly press Exit.
       } else {
-        setNavState('hero');
+        const fallback = getInitialNavState();
+        setNavState(fallback.navState);
         setForceShowHub(false);
         setShowIntro(false);
       }
@@ -169,104 +202,157 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePop);
   }, []);
 
-  /* ── Forward navigation handlers ── */
+  /* ── Forward navigation handlers (pushState with sequential step) ── */
 
   const handleNavigateToDistrict = () => {
     setNavState('district');
-    window.history.pushState({ navState: 'district', district: null, sectorCategory: null, sector: null }, '', '#district');
+    window.history.pushState({ navState: 'district', step: 1, district: null, sectorCategory: null, sector: null }, '', '#district');
   };
 
   const handleDistrictSelected = (district: TNDistrict) => {
     setSelectedDistrict(district);
     writeLS(LS_DISTRICT, district);
-    setNavState('sector');
-    window.history.pushState({ navState: 'sector', district, sectorCategory: null, sector: null }, '', `#sector-${district.id}`);
+    if (user) {
+      setNavState('workspace');
+      setForceShowHub(true);
+      window.history.pushState(
+        { navState: 'hub', step: 1, district, forceShowHub: true },
+        '',
+        '#hub'
+      );
+    } else {
+      setNavState('sector');
+      window.history.pushState({ navState: 'sector', step: 2, district, sectorCategory: null, sector: null }, '', `#sector-${district.id}`);
+    }
   };
 
   const handleSectorCategorySelected = (sectorCat: SectorCategory) => {
     setSelectedSectorCategory(sectorCat);
     writeLS(LS_SECTOR_CAT, sectorCat);
     setNavState('business');
-    window.history.pushState({ navState: 'business', district: selectedDistrict, sectorCategory: sectorCat, sector: null }, '', `#business-${sectorCat.id}`);
+    window.history.pushState({ navState: 'business', step: 3, district: selectedDistrict, sectorCategory: sectorCat, sector: null }, '', `#business-${sectorCat.id}`);
   };
 
-  const handleBusinessSelected = (sec: Sector) => {
+  const handleBusinessSelected = async (sec: Sector) => {
     setSelectedSector(sec);
     writeLS(LS_SECTOR, sec);
+
+    // If user is already authenticated (e.g. via Gmail account), switch workspace directly
+    if (user) {
+      try {
+        await switchSector(sec.id);
+        setShowIntro(false);
+        setNavState('workspace');
+        setForceShowHub(false);
+        window.history.pushState(
+          { navState: 'workspace', step: 4, district: selectedDistrict, sectorCategory: selectedSectorCategory, sector: sec },
+          '',
+          '#workspace'
+        );
+        return;
+      } catch (err) {
+        console.warn('Switch sector failed, falling back to login view:', err);
+      }
+    }
+
     setShowIntro(true);
     setNavState('login');
-    window.history.pushState({ navState: 'login', district: selectedDistrict, sectorCategory: selectedSectorCategory, sector: sec }, '', `#login-${sec.id}`);
+    window.history.pushState({ navState: 'login', step: 4, district: selectedDistrict, sectorCategory: selectedSectorCategory, sector: sec }, '', `#login-${sec.id}`);
   };
 
   /*
    * Called when login/demo-login succeeds.
-   * Pushes a 'workspace' history entry so browser Back goes back to 'login',
-   * NOT straight to 'district'.
    */
   const handleLoginSuccess = () => {
     setShowIntro(false);
-    setNavState('workspace');
-    setForceShowHub(false);
-    window.history.pushState(
-      { navState: 'workspace', district: selectedDistrict, sectorCategory: selectedSectorCategory, sector: selectedSector },
-      '',
-      '#workspace',
-    );
+    if (selectedSector) {
+      setNavState('workspace');
+      setForceShowHub(false);
+      window.history.replaceState(
+        { navState: 'workspace', step: 4, district: selectedDistrict, sectorCategory: selectedSectorCategory, sector: selectedSector },
+        '',
+        '#workspace',
+      );
+    } else {
+      setNavState('workspace');
+      setForceShowHub(true);
+      window.history.replaceState(
+        { navState: 'hub', step: 1, forceShowHub: true },
+        '',
+        '#hub',
+      );
+    }
   };
 
-  /* ── Back navigation handlers (do NOT logout) ── */
+  /* ── Back navigation handlers (Use window.history.back when available to prevent duplicate forward entries) ── */
 
   const handleBackToHero = () => {
-    setNavState('hero');
-    setSelectedDistrict(null);
-    setSelectedSectorCategory(null);
-    setSelectedSector(null);
-    setShowIntro(false);
-    writeLS(LS_DISTRICT, null);
-    writeLS(LS_SECTOR_CAT, null);
-    writeLS(LS_SECTOR, null);
-    window.history.pushState({ navState: 'hero' }, '', window.location.pathname.replace(/#.*$/, ''));
+    if (window.history.state?.step !== undefined && window.history.state.step > 0) {
+      window.history.back();
+    } else {
+      setNavState('hero');
+      setSelectedDistrict(null);
+      setSelectedSectorCategory(null);
+      setSelectedSector(null);
+      setShowIntro(false);
+      writeLS(LS_DISTRICT, null);
+      writeLS(LS_SECTOR_CAT, null);
+      writeLS(LS_SECTOR, null);
+      window.history.replaceState({ navState: 'hero', step: 0 }, '', window.location.pathname.replace(/#.*$/, ''));
+    }
   };
 
   const handleBackToDistrict = () => {
-    setNavState('district');
-    setSelectedSectorCategory(null);
-    setSelectedSector(null);
-    setShowIntro(false);
-    writeLS(LS_SECTOR_CAT, null);
-    writeLS(LS_SECTOR, null);
-    window.history.pushState({ navState: 'district', district: selectedDistrict, sectorCategory: null, sector: null }, '', '#district');
+    if (window.history.state?.step !== undefined && window.history.state.step > 1) {
+      window.history.back();
+    } else {
+      setNavState('district');
+      setSelectedSectorCategory(null);
+      setSelectedSector(null);
+      setShowIntro(false);
+      writeLS(LS_SECTOR_CAT, null);
+      writeLS(LS_SECTOR, null);
+      window.history.replaceState({ navState: 'district', step: 1, district: selectedDistrict, sectorCategory: null, sector: null }, '', '#district');
+    }
   };
 
   const handleBackToSector = () => {
-    setNavState('sector');
-    setSelectedSector(null);
-    setShowIntro(false);
-    writeLS(LS_SECTOR, null);
-    window.history.pushState({ navState: 'sector', district: selectedDistrict, sectorCategory: selectedSectorCategory, sector: null }, '', `#sector-${selectedDistrict?.id ?? ''}`);
+    if (window.history.state?.step !== undefined && window.history.state.step > 2) {
+      window.history.back();
+    } else {
+      setNavState('sector');
+      setSelectedSector(null);
+      setShowIntro(false);
+      writeLS(LS_SECTOR, null);
+      window.history.replaceState({ navState: 'sector', step: 2, district: selectedDistrict, sectorCategory: selectedSectorCategory, sector: null }, '', `#sector-${selectedDistrict?.id ?? ''}`);
+    }
   };
 
   const handleBackToBusiness = () => {
-    setNavState('business');
-    setSelectedSector(null);
-    setShowIntro(false);
-    writeLS(LS_SECTOR, null);
-    window.history.pushState({ navState: 'business', district: selectedDistrict, sectorCategory: selectedSectorCategory, sector: null }, '', `#business-${selectedSectorCategory?.id ?? ''}`);
+    if (window.history.state?.step !== undefined && window.history.state.step > 3) {
+      window.history.back();
+    } else {
+      setNavState('business');
+      setSelectedSector(null);
+      setShowIntro(false);
+      writeLS(LS_SECTOR, null);
+      window.history.replaceState({ navState: 'business', step: 3, district: selectedDistrict, sectorCategory: selectedSectorCategory, sector: null }, '', `#business-${selectedSectorCategory?.id ?? ''}`);
+    }
   };
 
   /*
-   * Back from workspace — goes to the category/sector screen WITHOUT logout.
-   * The user stays authenticated; forceShowHub shows the public nav flow
-   * while keeping the session alive so they can re-enter workspace quickly.
+   * Back from workspace — returns to the main hub showing all 6 business workspaces WITHOUT logout.
+   * The user stays authenticated; forceShowHub shows the 6-workspace hub dashboard.
    */
   const handleBackFromWorkspace = () => {
-    setNavState('business');
     setForceShowHub(true);
+    setSelectedSector(null);
     setShowIntro(false);
+    writeLS(LS_SECTOR, null);
     window.history.pushState(
-      { navState: 'business', district: selectedDistrict, sectorCategory: selectedSectorCategory, sector: null, forceShowHub: true },
+      { navState: 'hub', step: 1, forceShowHub: true },
       '',
-      `#business-${selectedSectorCategory?.id ?? ''}`,
+      '#hub',
     );
   };
 
@@ -293,10 +379,10 @@ export const App: React.FC = () => {
 
   /* ── Sync navState to 'workspace' on page-refresh with valid token ── */
   useEffect(() => {
-    if (user && activeSector && navState !== 'workspace' && !forceShowHub) {
+    if (user && activeSector && selectedSector && navState !== 'workspace' && !forceShowHub) {
       setNavState('workspace');
     }
-  }, [user, activeSector, navState, forceShowHub]);
+  }, [user, activeSector, selectedSector, navState, forceShowHub]);
 
   /* ── Guards ── */
   if (authLoading || loadingSectors) return <LoadingScreen />;
@@ -310,21 +396,115 @@ export const App: React.FC = () => {
   }
 
   /* ============================================================
-     2. AUTHENTICATED WORKSPACE
+     2. AUTHENTICATED WORKSPACE SHELL
      Show workspace when: user authenticated AND activeSector set
-     AND we are NOT forcing the hub/public-nav view.
-     forceShowHub is set by Back-from-workspace so the user can
-     browse other businesses without being logged out.
+     AND user selected a specific sector AND we are NOT on the hub.
      ============================================================ */
-  if (user && activeSector && !forceShowHub) {
+  if (user && activeSector && selectedSector && !forceShowHub) {
     return (
       <WorkspaceShell
         sector={activeSector}
         user={user}
         district={selectedDistrict}
         onLogout={handleExit}        // Exit button — clears session, replaces history
-        onReturnHub={handleBackFromWorkspace}  // Back button — no logout, goes to category
+        onReturnHub={handleBackFromWorkspace}  // Back button — returns to 6-workspaces hub
       />
+    );
+  }
+
+  /* ============================================================
+     3. AUTHENTICATED MAIN HUB: ALL SIX BUSINESS WORKSPACES
+     One Gmail Account = One User ID = Access to All Six Workspaces.
+     ============================================================ */
+  if (user) {
+    return (
+      <div className="min-h-screen flex flex-col relative" style={{ background: '#080B18', color: '#E8EDF9' }}>
+        {/* Top Navbar */}
+        <header
+          className="flex items-center justify-between px-6 py-4 sticky top-0 z-20"
+          style={{
+            background: 'rgba(8,11,24,0.96)',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #8065FF 0%, #32D8E8 100%)' }}
+            >
+              <Mic className="w-5 h-5 text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <span className="text-base font-bold tracking-tight text-white font-heading">
+                VAAYIL AI
+              </span>
+              <span className="hidden sm:block text-[10px] text-slate-400">
+                Single Gmail Account · All Six Business Workspaces
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Tamil Nadu District Selector / Switcher */}
+            <button
+              onClick={() => {
+                setNavState('district');
+                window.history.pushState(
+                  { navState: 'district', step: 1, district: selectedDistrict },
+                  '',
+                  '#district'
+                );
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors hover:border-cyan-400"
+              style={{
+                background: 'rgba(50,216,232,0.08)',
+                borderColor: 'rgba(50,216,232,0.25)',
+                color: '#32D8E8',
+              }}
+              title="Switch Tamil Nadu District (All 38 Districts Available)"
+            >
+              <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{selectedDistrict ? `${selectedDistrict.en} (${selectedDistrict.ta})` : 'All 38 Districts'}</span>
+              <span className="text-[10px] text-cyan-300/70 hidden sm:inline">Change</span>
+            </button>
+
+            {/* User Account Chip */}
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 text-xs"
+              style={{ background: 'rgba(255,255,255,0.04)' }}
+            >
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-semibold text-white">{user.full_name || user.username}</span>
+              <span className="text-slate-400 font-mono text-[11px] hidden sm:inline">({user.email})</span>
+            </div>
+
+            {/* Exit / Sign Out Button */}
+            <button
+              onClick={handleExit}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors"
+              style={{
+                background: 'rgba(255,100,124,0.1)',
+                borderColor: 'rgba(255,100,124,0.25)',
+                color: '#FF647C',
+              }}
+              title="Sign Out (Clears Session)"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Exit</span>
+            </button>
+          </div>
+        </header>
+
+        {/* All Six Workspaces Hub Grid */}
+        <main className="flex-1 overflow-y-auto">
+          <VaayilHub2D
+            sectors={sectors.filter((s) => s.id !== 'system')}
+            selectedSector={selectedSector || activeSector}
+            onSelectSector={handleBusinessSelected}
+          />
+        </main>
+      </div>
     );
   }
 
@@ -370,14 +550,25 @@ export const App: React.FC = () => {
   if (navState === 'district') {
     return (
       <>
-        <DistrictSelector onSelectDistrict={handleDistrictSelected} onBack={handleBackToHero} />
+        <DistrictSelector
+          onSelectDistrict={handleDistrictSelected}
+          onBack={user ? handleBackFromWorkspace : handleBackToHero}
+        />
         {sharedModals}
       </>
     );
   }
 
   // Sector category selector
-  if (navState === 'sector' && selectedDistrict) {
+  if (navState === 'sector') {
+    if (!selectedDistrict) {
+      return (
+        <>
+          <DistrictSelector onSelectDistrict={handleDistrictSelected} onBack={handleBackToHero} />
+          {sharedModals}
+        </>
+      );
+    }
     return (
       <>
         <SectorSelector district={selectedDistrict} onSelectSector={handleSectorCategorySelected} onBack={handleBackToDistrict} />
@@ -387,7 +578,15 @@ export const App: React.FC = () => {
   }
 
   // Business selector
-  if (navState === 'business' && selectedDistrict && selectedSectorCategory) {
+  if (navState === 'business') {
+    if (!selectedDistrict || !selectedSectorCategory) {
+      return (
+        <>
+          <DistrictSelector onSelectDistrict={handleDistrictSelected} onBack={handleBackToHero} />
+          {sharedModals}
+        </>
+      );
+    }
     return (
       <>
         <BusinessSelector
@@ -406,6 +605,19 @@ export const App: React.FC = () => {
      4. LOGIN OVERLAY
      (Sector selected, not yet authenticated)
      ============================================================ */
+  if (!selectedSector) {
+    return (
+      <>
+        <VaayilHubHero
+          onSelectDistrict={handleNavigateToDistrict}
+          onOpenAdminLogin={() => setShowAdminLoginModal(true)}
+          onOpenUserLogin={() => setShowUserAuthModal(true)}
+        />
+        {sharedModals}
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden flex flex-col select-none" style={{ background: '#080B18', color: '#E8EDF9' }}>
 

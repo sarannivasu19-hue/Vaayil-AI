@@ -5,6 +5,7 @@ from app.models.sector import Sector
 from app.models.user import User
 from app.models.alert import Alert
 from app.models.call_log import CallLog
+from app.models.google_account import GoogleAccount
 from app.auth.security import hash_password
 from app.sectors.registry import get_all_sector_packages
 from app.config import settings
@@ -71,6 +72,7 @@ def seed_demo_data(db: Session) -> None:
         else:
             existing_user.email = user_info["email"]
             existing_user.full_name = user_info["full_name"]
+            existing_user.sector_id = pkg.id
             if not existing_user.phone:
                 existing_user.phone = "+91 98409 12345"
             existing_user.is_active = True
@@ -276,5 +278,24 @@ def seed_demo_data(db: Session) -> None:
                 created_at=now - timedelta(minutes=15)
             )
             db.add(alert)
+
+    # 4. Seed Centralized Shared Google Account (sarannivasusenthil@gmail.com)
+    # Available across all six workspaces (Panchayat, Clinic, Vet Clinic, Hotel, Restaurant, Coaching)
+    default_email = getattr(settings, "GOOGLE_DEFAULT_EMAIL", "sarannivasusenthil@gmail.com")
+    existing_google = db.query(GoogleAccount).filter(GoogleAccount.email.ilike(default_email)).first()
+    if not existing_google:
+        saran_user = db.query(User).filter(User.email.ilike(default_email)).first()
+        now_dt = datetime.now(timezone.utc)
+        google_acc = GoogleAccount(
+            user_id=saran_user.id if saran_user else None,
+            email=default_email,
+            access_token="mock_access_token_gmail_send_valid",
+            refresh_token="mock_refresh_token_offline_access",
+            token_expiry=now_dt + timedelta(days=30),
+            scope="https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email",
+            is_connected=True,
+            last_error=None,
+        )
+        db.add(google_acc)
 
     db.commit()
