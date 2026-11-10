@@ -79,8 +79,8 @@ app.add_middleware(
     allow_origins=origins,
     allow_origin_regex=r"^https://[a-zA-Z0-9-]+\.onrender\.com$",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Register API subrouters with standard /api prefix

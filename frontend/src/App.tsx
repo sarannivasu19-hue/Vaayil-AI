@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import type { Sector } from './types';
-import { api } from './services/api';
+import { api, API_BASE } from './services/api';
 import { useAuth } from './context/AuthContext';
 import { SectorLoginCard } from './components/hub/SectorLoginCard';
 import { WorkspaceShell } from './components/layout/WorkspaceShell';
@@ -110,7 +110,6 @@ const LoadingScreen: React.FC = () => (
 
 /* ── Error screen ── */
 const ErrorScreen: React.FC<{ error: string; onRetry: () => void }> = ({ error, onRetry }) => {
-  const backendUrl = (import.meta as any).env?.VITE_API_BASE_URL || '(relative /api — no env var set)';
   const isSleeping = error.toLowerCase().includes('failed to fetch') || error.toLowerCase().includes('networkerror');
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: '#080B18' }}>
@@ -125,7 +124,7 @@ const ErrorScreen: React.FC<{ error: string; onRetry: () => void }> = ({ error, 
         )}
         <div className="text-left rounded-lg px-3 py-2 text-[11px] font-mono break-all" style={{ background: 'rgba(255,255,255,0.04)', color: '#5A6480' }}>
           <span className="text-[#4A5568]">API target: </span>
-          <span className="text-[#9AA7BE]">{backendUrl}</span>
+          <span className="text-[#9AA7BE]">{API_BASE}</span>
         </div>
         <div className="flex gap-3 justify-center">
           <button

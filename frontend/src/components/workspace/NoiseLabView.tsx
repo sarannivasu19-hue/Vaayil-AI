@@ -5,7 +5,7 @@ import type {
   NoiseLabExperimentResponse,
   NoiseLabSavedRun,
 } from '../../types';
-import { api } from '../../services/api';
+import { api, API_BASE } from '../../services/api';
 import {
   Volume2,
   Mic,
@@ -324,7 +324,7 @@ export const NoiseLabView: React.FC<NoiseLabViewProps> = ({ sectorDetail }) => {
   async function handleDownloadCsv(runId: number) {
     try {
       const token = localStorage.getItem('vaayil_token');
-      const resp = await fetch(`/api/noise-lab/runs/${runId}/export-csv`, {
+      const resp = await fetch(`${API_BASE}/noise-lab/runs/${runId}/export-csv`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!resp.ok) throw new Error(`Export failed: ${resp.statusText}`);

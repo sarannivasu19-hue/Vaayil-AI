@@ -19,10 +19,27 @@ import type {
   AdminUser,
 } from '../types';
 
-const rawApiBase = (import.meta as any).env?.VITE_API_BASE_URL;
-const API_BASE = rawApiBase
-  ? (rawApiBase.endsWith('/api') ? rawApiBase : `${rawApiBase.replace(/\/+$/, '')}/api`)
-  : '/api';
+export function resolveApiBase(): string {
+  // 1. Explicit environment variable if provided at Vite build time
+  const rawApiBase = (import.meta as any).env?.VITE_API_BASE_URL;
+  if (rawApiBase && typeof rawApiBase === 'string' && rawApiBase.trim()) {
+    const clean = rawApiBase.trim();
+    return clean.endsWith('/api') ? clean : `${clean.replace(/\/+$/, '')}/api`;
+  }
+
+  // 2. Runtime browser detection: If running in browser on Render production domain
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname;
+    if (hostname.includes('onrender.com') || hostname === 'vaayil-frontend.onrender.com') {
+      return 'https://vaayil-backend.onrender.com/api';
+    }
+  }
+
+  // 3. Fallback for local development (uses Vite dev server proxy to http://127.0.0.1:8000)
+  return '/api';
+}
+
+export const API_BASE = resolveApiBase();
 
 export class ApiError extends Error {
   status: number;

@@ -1,0 +1,11 @@
+{
+  "name": "vaayil-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vaayil AI - Tamil Voice Agent Platform for Local Businesses and Public Services",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd frontend && npm run preview",
+    "test": "cd backend && pytest"
+  }
+}

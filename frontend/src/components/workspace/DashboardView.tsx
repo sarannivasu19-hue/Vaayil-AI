@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { SectorDetail, DashboardSummary, Booking } from '../../types';
-import { api } from '../../services/api';
+import { api, API_BASE } from '../../services/api';
 import {
   PhoneCall,
   CalendarCheck,
@@ -432,7 +432,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ sectorDetail, onNa
             </button>
 
             <a
-              href="/api/analytics/export/calls"
+              href={`${API_BASE}/analytics/export/calls`}
               download
               className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all hover:bg-slate-800"
               style={{ background: 'rgba(23,31,51,0.7)', borderColor: 'rgba(255,255,255,0.10)', color: '#9AA7BE' }}
