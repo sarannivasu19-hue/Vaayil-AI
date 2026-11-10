@@ -1,0 +1,50 @@
+services:
+  # ── Backend (FastAPI / Uvicorn) ──────────────────────────────────────────────
+  - type: web
+    name: vaayil-backend
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: CORS_ORIGINS
+        value: https://vaayil-frontend.onrender.com,http://localhost:5173,http://127.0.0.1:5173
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:////opt/render/project/src/vaayil.db
+      # Set these in Render Dashboard → Environment (never commit to repo):
+      # GNANI_API_KEY
+      # DEFAULT_ADMIN_USERNAME
+      # DEFAULT_ADMIN_PASSWORD
+      # GOOGLE_CLIENT_ID
+      # GOOGLE_CLIENT_SECRET
+
+  # ── Frontend (Vite / React — Static Site) ────────────────────────────────────
+  - type: web
+    name: vaayil-frontend
+    runtime: static
+    region: singapore
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://vaayil-backend.onrender.com
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+

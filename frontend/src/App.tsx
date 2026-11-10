@@ -109,18 +109,44 @@ const LoadingScreen: React.FC = () => (
 );
 
 /* ── Error screen ── */
-const ErrorScreen: React.FC<{ error: string }> = ({ error }) => (
-  <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: '#080B18' }}>
-    <div className="w-full max-w-sm p-6 rounded-2xl text-center" style={{ background: '#101626', border: '1px solid rgba(255,100,124,0.30)' }}>
-      <AlertCircle className="w-10 h-10 mx-auto mb-4 text-[#FF647C]" />
-      <h2 className="text-base font-semibold text-[#E8EDF9] mb-2 font-heading">Backend Connection Error</h2>
-      <p className="text-xs text-[#FF647C] mb-5 leading-relaxed break-words">{error}</p>
-      <button onClick={() => window.location.reload()} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer border-none" style={{ background: '#8065FF', color: '#fff' }}>
-        Retry Connection
-      </button>
+const ErrorScreen: React.FC<{ error: string; onRetry: () => void }> = ({ error, onRetry }) => {
+  const backendUrl = (import.meta as any).env?.VITE_API_BASE_URL || '(relative /api — no env var set)';
+  const isSleeping = error.toLowerCase().includes('failed to fetch') || error.toLowerCase().includes('networkerror');
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: '#080B18' }}>
+      <div className="w-full max-w-md p-6 rounded-2xl text-center space-y-4" style={{ background: '#101626', border: '1px solid rgba(255,100,124,0.30)' }}>
+        <AlertCircle className="w-10 h-10 mx-auto text-[#FF647C]" />
+        <h2 className="text-base font-semibold text-[#E8EDF9] font-heading">Backend Connection Error</h2>
+        <p className="text-xs text-[#FF647C] leading-relaxed break-words">{error}</p>
+        {isSleeping && (
+          <p className="text-xs text-[#9AA7BE] leading-relaxed">
+            The backend may be waking up from sleep (Render free tier). Please wait 30–60 seconds and retry.
+          </p>
+        )}
+        <div className="text-left rounded-lg px-3 py-2 text-[11px] font-mono break-all" style={{ background: 'rgba(255,255,255,0.04)', color: '#5A6480' }}>
+          <span className="text-[#4A5568]">API target: </span>
+          <span className="text-[#9AA7BE]">{backendUrl}</span>
+        </div>
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={onRetry}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer border-none"
+            style={{ background: '#8065FF', color: '#fff' }}
+          >
+            Retry Connection
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+            style={{ background: 'transparent', color: '#9AA7BE', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const App: React.FC = () => {
   const { user, activeSector, logout, switchSector, isLoading: authLoading } = useAuth();
@@ -148,20 +174,22 @@ export const App: React.FC = () => {
   const [showAdminLoginModal, setShowAdminLoginModal] = useState<boolean>(false);
 
   /* ── Sector list ── */
-  useEffect(() => {
-    async function loadSectors() {
-      try {
-        setLoadingSectors(true);
-        const data = await api.getSectors();
-        setSectors(data);
-      } catch (err: unknown) {
-        setFetchError(err instanceof Error ? err.message : 'Failed to load sectors');
-      } finally {
-        setLoadingSectors(false);
-      }
+  const loadSectors = React.useCallback(async () => {
+    try {
+      setLoadingSectors(true);
+      setFetchError(null);
+      const data = await api.getSectors();
+      setSectors(data);
+    } catch (err: unknown) {
+      setFetchError(err instanceof Error ? err.message : 'Failed to load sectors');
+    } finally {
+      setLoadingSectors(false);
     }
-    loadSectors();
   }, []);
+
+  useEffect(() => {
+    loadSectors();
+  }, [loadSectors]);
 
   /* ── Browser Back / Forward ── */
   useEffect(() => {
@@ -386,7 +414,7 @@ export const App: React.FC = () => {
 
   /* ── Guards ── */
   if (authLoading || loadingSectors) return <LoadingScreen />;
-  if (fetchError) return <ErrorScreen error={fetchError} />;
+  if (fetchError) return <ErrorScreen error={fetchError} onRetry={loadSectors} />;
 
   /* ============================================================
      1. ADMIN EXPERIENCE

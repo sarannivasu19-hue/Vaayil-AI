@@ -60,23 +60,27 @@ app = FastAPI(
 )
 
 # Configure CORS
-origins = settings.cors_origins_list
-for default_origin in [
+# Always include the Render production frontend regardless of env config
+ALWAYS_ALLOWED_ORIGINS = [
+    "https://vaayil-frontend.onrender.com",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-]:
-    if default_origin not in origins:
-        origins.append(default_origin)
+]
+
+origins = settings.cors_origins_list
+for origin in ALWAYS_ALLOWED_ORIGINS:
+    if origin not in origins:
+        origins.append(origin)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins if "*" not in origins else ["*"],
-    allow_origin_regex=r"^https?://.*",
+    allow_origins=origins,
+    allow_origin_regex=r"^https://[a-zA-Z0-9-]+\.onrender\.com$",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 # Register API subrouters with standard /api prefix

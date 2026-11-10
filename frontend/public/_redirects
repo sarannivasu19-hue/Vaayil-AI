@@ -1,0 +1,8 @@
+# Render Static Site Redirect Rules
+# Proxy all /api/* requests to the live backend.
+# This makes the frontend work even when VITE_API_BASE_URL is baked in as '/api'.
+/api/*  https://vaayil-backend.onrender.com/api/:splat  200
+
+# SPA fallback — all non-file routes serve index.html so React Router works
+/*  /index.html  200
+
